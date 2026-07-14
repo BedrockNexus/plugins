@@ -70,16 +70,16 @@ Acceptance:
 
 ## Phase 1 — UI and application foundation
 
-- [ ] Initialize Tailwind CSS 4 and shadcn/ui.
-- [ ] Add the BedrockNexus Plugins design tokens, typography, dark mode, and
+- [x] Initialize Tailwind CSS 4 and shadcn/ui.
+- [x] Add the BedrockNexus Plugins design tokens, typography, dark mode, and
   accessible focus states.
-- [ ] Create route groups for public, authenticated dashboard, admin, and API
+- [x] Create route groups for public, authenticated dashboard, admin, and API
   surfaces.
-- [ ] Build the shared navigation, footer, page shell, empty states, loading
+- [x] Build the shared navigation, footer, page shell, empty states, loading
   states, error boundaries, and responsive layout.
-- [ ] Rebuild the approved concept home page using shadcn/ui components.
-- [ ] Add public placeholder routes for Explore, Software, Project, and Creator.
-- [ ] Add metadata, sitemap, robots, canonical URL, and social card handling.
+- [x] Rebuild the approved concept home page using shadcn/ui components.
+- [x] Add public placeholder routes for Explore, Software, Project, and Creator.
+- [x] Add metadata, sitemap, robots, canonical URL, and social card handling.
 
 Acceptance:
 

@@ -1,26 +1,142 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --radius: 0.75rem;
+  --background: oklch(0.985 0.004 230);
+  --foreground: oklch(0.2 0.025 243);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.025 243);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.025 243);
+  --primary: oklch(0.56 0.16 159);
+  --primary-foreground: oklch(0.99 0.01 159);
+  --secondary: oklch(0.94 0.012 232);
+  --secondary-foreground: oklch(0.28 0.03 239);
+  --muted: oklch(0.955 0.009 232);
+  --muted-foreground: oklch(0.5 0.025 240);
+  --accent: oklch(0.93 0.035 161);
+  --accent-foreground: oklch(0.29 0.08 159);
+  --destructive: oklch(0.58 0.22 27);
+  --border: oklch(0.89 0.015 232);
+  --input: oklch(0.86 0.018 232);
+  --ring: oklch(0.56 0.16 159);
+  --brand-sky: oklch(0.65 0.15 230);
+  --brand-glow: oklch(0.8 0.16 154);
+}
+
+.dark {
+  --background: oklch(0.145 0.022 244);
+  --foreground: oklch(0.95 0.01 232);
+  --card: oklch(0.19 0.025 243);
+  --card-foreground: oklch(0.95 0.01 232);
+  --popover: oklch(0.19 0.025 243);
+  --popover-foreground: oklch(0.95 0.01 232);
+  --primary: oklch(0.72 0.17 158);
+  --primary-foreground: oklch(0.16 0.04 158);
+  --secondary: oklch(0.245 0.025 241);
+  --secondary-foreground: oklch(0.93 0.012 232);
+  --muted: oklch(0.225 0.02 241);
+  --muted-foreground: oklch(0.68 0.025 235);
+  --accent: oklch(0.27 0.055 160);
+  --accent-foreground: oklch(0.91 0.06 158);
+  --destructive: oklch(0.68 0.2 24);
+  --border: oklch(1 0 0 / 11%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.72 0.17 158);
+  --brand-sky: oklch(0.7 0.14 230);
+  --brand-glow: oklch(0.72 0.17 158);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-brand-sky: var(--brand-sky);
+  --color-brand-glow: var(--brand-glow);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    min-width: 320px;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 28%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .site-grid {
+    background-image:
+      linear-gradient(
+        to right,
+        color-mix(in oklab, var(--foreground) 5%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--foreground) 5%, transparent) 1px,
+        transparent 1px
+      );
+    background-size: 44px 44px;
+    mask-image: linear-gradient(to bottom, black, transparent 78%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+  }
 }
