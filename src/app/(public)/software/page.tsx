@@ -1,4 +1,6 @@
-import { ArrowRight, Box } from "lucide-react";
+import { Package01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -25,12 +27,12 @@ export default function SoftwarePage() {
           <Link
             key={software.slug}
             href={`/software/${software.slug}`}
-            className="group rounded-2xl"
+            className="group rounded-xl"
           >
             <Card className="h-full transition-[transform,border-color] group-hover:-translate-y-1 group-hover:border-primary/35">
               <CardHeader className="grid-cols-[auto_1fr_auto] items-center gap-x-4">
-                <span className="row-span-2 grid size-12 place-items-center rounded-xl bg-primary/10 text-primary">
-                  <Box className="size-5" aria-hidden="true" />
+                <span className="row-span-2 grid size-12 place-items-center rounded-lg bg-primary text-primary-foreground">
+                  <HugeiconsIcon icon={Package01Icon} className="size-5" aria-hidden="true" />
                 </span>
                 <CardTitle className="col-start-2 text-lg">{software.name}</CardTitle>
                 <CardDescription className="col-start-2">
@@ -39,7 +41,10 @@ export default function SoftwarePage() {
                 <Badge variant="outline" className="col-start-3 row-start-1">
                   {software.status}
                 </Badge>
-                <ArrowRight className="col-start-3 row-start-2 size-4 justify-self-end text-muted-foreground transition-transform group-hover:translate-x-1" />
+                <HugeiconsIcon
+                  icon={ArrowRight01Icon}
+                  className="col-start-3 row-start-2 size-4 justify-self-end text-muted-foreground transition-transform group-hover:translate-x-1"
+                />
               </CardHeader>
             </Card>
           </Link>

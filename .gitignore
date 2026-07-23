@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+/hugeicons-migrate-backup-*/
 
 # debug
 npm-debug.log*

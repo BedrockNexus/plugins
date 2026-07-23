@@ -89,21 +89,23 @@ Acceptance:
 
 ## Phase 2 — Convex and Better Auth
 
-- [ ] Create a new standalone Convex project for BedrockNexus Plugins.
-- [ ] Install current mutually compatible versions of `convex`, `better-auth`,
+- [x] Create a new standalone Convex project for BedrockNexus Plugins.
+- [x] Install current mutually compatible versions of `convex`, `better-auth`,
   and `@convex-dev/better-auth` from the official integration guide.
-- [ ] Register the Better Auth Convex component and auth provider config.
-- [ ] Create the Convex HTTP auth routes and Next.js auth proxy route.
-- [ ] Configure a separate GitHub OAuth application for Better Auth sign-in.
-- [ ] Add GitHub as the only MVP social provider and request email access.
-- [ ] Add the Convex Better Auth client provider with authenticated SSR helpers.
-- [ ] Install Better Auth UI from its shadcn registry.
-- [ ] Use Better Auth UI for sign-in, account, sessions, security, and linked
+- [x] Register the Better Auth Convex component and auth provider config.
+- [x] Create the Convex HTTP auth routes and Next.js auth proxy route.
+- [x] Configure a separate GitHub OAuth application for Better Auth sign-in.
+  The development app uses the localhost callback, and its credentials are
+  stored only in the standalone Convex development environment.
+- [x] Add GitHub as the only MVP social provider and request email access.
+- [x] Add the Convex Better Auth client provider with authenticated SSR helpers.
+- [x] Install Better Auth UI from its shadcn registry.
+- [x] Use Better Auth UI for sign-in, account, sessions, security, and linked
   accounts. Do not maintain duplicate custom auth screens.
-- [ ] Add backend role helpers for developer, verified creator, moderator, admin.
-- [ ] Add user and creator-profile synchronization without duplicating Better
+- [x] Add backend role helpers for developer, verified creator, moderator, admin.
+- [x] Add user and creator-profile synchronization without duplicating Better
   Auth-owned session/account tables.
-- [ ] Protect dashboard and admin data on the backend, not only in navigation.
+- [x] Protect dashboard and admin data on the backend, not only in navigation.
 
 Acceptance:
 
@@ -111,6 +113,31 @@ Acceptance:
 - Refreshing a protected route preserves the authenticated session.
 - Convex functions can reliably authorize the current user.
 - Admin and moderator functions reject insufficient roles server-side.
+
+## Pre-Phase 3 — Shared BedrockNexus visual system
+
+- [x] Reuse the main BedrockNexus logo, favicon, color tokens, radii, and
+  JetBrains Mono typography.
+- [x] Align public navigation, mobile navigation, footer, cards, empty states,
+  page headers, and responsive spacing with the main platform.
+- [x] Align authenticated and admin shells with the main platform's dashboard
+  styling while keeping the Plugins information architecture.
+- [x] Keep Plugins pages and product flows distinct instead of cloning the main
+  BedrockNexus page designs.
+- [x] Restore the Plugins-specific split hero, release-provenance story,
+  publishing workflow, directory layouts, and horizontal workspace navigation
+  within the shared visual system.
+- [x] Refine light/dark contrast, responsive page composition, route-specific
+  empty states, and stale pre-authentication copy.
+- [x] Standardize application and shared UI iconography on Hugeicons using the
+  official Lucide migration workflow.
+
+Acceptance:
+
+- BedrockNexus and BedrockNexus Plugins clearly belong to one visual system.
+- Plugins retains its publishing-specific pages, copy, and navigation.
+- Public and authenticated layouts work without horizontal overflow at desktop
+  and mobile breakpoints.
 
 ## Phase 3 — Core Convex domain model
 

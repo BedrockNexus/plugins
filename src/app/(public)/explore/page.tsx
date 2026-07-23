@@ -1,9 +1,11 @@
-import { SearchX } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { FilterIcon, Search01Icon, SearchMinusIcon } from "@hugeicons/core-free-icons";
 import type { Metadata } from "next";
 
 import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 export const metadata: Metadata = {
@@ -19,23 +21,38 @@ export default function ExplorePage() {
       title="Explore Bedrock projects"
       description="Search and filter plugins, extensions, libraries, and tools across every supported server software."
     >
-      <search>
-        <form className="mb-8 flex max-w-2xl gap-3">
-          <Input
-            name="q"
-            type="search"
-            placeholder="Search the registry"
-            aria-label="Search the registry"
-          />
-          <Button type="submit" variant="secondary">
-            Search
+      <Card className="mb-8 shadow-none">
+        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-end">
+          <search className="min-w-0 flex-1">
+            <form className="flex flex-col gap-3 sm:flex-row">
+              <label className="relative min-w-0 flex-1" htmlFor="registry-search">
+                <HugeiconsIcon
+                  icon={Search01Icon}
+                  className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <span className="sr-only">Search the registry</span>
+                <Input
+                  className="pl-9"
+                  id="registry-search"
+                  name="q"
+                  type="search"
+                  placeholder="Search plugins, creators, or software"
+                />
+              </label>
+              <Button type="submit">Search registry</Button>
+            </form>
+          </search>
+          <Button className="gap-2" disabled variant="outline">
+            <HugeiconsIcon icon={FilterIcon} className="size-4" aria-hidden="true" />
+            Filters coming soon
           </Button>
-        </form>
-      </search>
+        </CardContent>
+      </Card>
       <EmptyState
-        icon={SearchX}
+        icon={SearchMinusIcon}
         title="The registry is ready for data"
-        description="Project search and filtering connect to Convex in Phase 7. This public route and its responsive, accessible empty state are available now."
+        description="Project search and filtering connect to Convex in Phase 7. Until trusted records exist, the registry deliberately avoids showing simulated projects."
       />
     </PageShell>
   );

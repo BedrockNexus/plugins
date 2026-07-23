@@ -1,4 +1,9 @@
-import { Boxes, Compass, LayoutDashboard, ShieldCheck } from "lucide-react";
+import {
+  CompassIcon,
+  DashboardBrowsingIcon,
+  Package01Icon,
+  Shield01Icon,
+} from "@hugeicons/core-free-icons";
 
 export const siteConfig = {
   name: "BedrockNexus Plugins",
@@ -6,17 +11,18 @@ export const siteConfig = {
   description:
     "A GitHub-powered publishing and discovery platform for Minecraft Bedrock server extensions.",
   url: "https://plugins.bedrocknexus.com",
+  hubUrl: "https://bedrocknexus.com",
   githubUrl: "https://github.com/BedrockNexus/plugins",
 } as const;
 
 export const publicNavigation = [
-  { href: "/explore", label: "Explore", icon: Compass },
-  { href: "/software", label: "Software", icon: Boxes },
+  { href: "/explore", label: "Explore", icon: CompassIcon },
+  { href: "/software", label: "Software", icon: Package01Icon },
 ] as const;
 
 export const workspaceNavigation = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin", label: "Admin", icon: ShieldCheck },
+  { href: "/dashboard", label: "Dashboard", icon: DashboardBrowsingIcon },
+  { href: "/admin", label: "Admin", icon: Shield01Icon },
 ] as const;
 
 export const softwareCatalog = [

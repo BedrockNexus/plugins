@@ -1,10 +1,18 @@
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata } from "next";
+import { JetBrains_Mono } from "next/font/google";
 
+import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
+import { getToken } from "@/lib/auth-server";
 
 import "./globals.css";
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://plugins.bedrocknexus.com"),
@@ -25,6 +33,11 @@ export const metadata: Metadata = {
   authors: [{ name: "BedrockNexus" }],
   creator: "BedrockNexus",
   publisher: "BedrockNexus",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/icon.png",
+  },
   alternates: {
     canonical: "/",
   },
@@ -43,16 +56,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialToken = await getToken();
+
   return (
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}
+      className={`${jetbrainsMono.variable} ${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
         <div className="isolate min-h-screen">
@@ -62,7 +77,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            <Providers initialToken={initialToken}>{children}</Providers>
           </ThemeProvider>
         </div>
       </body>

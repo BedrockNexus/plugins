@@ -1,6 +1,6 @@
 "use client";
-
-import { AlertTriangle } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Alert01Icon } from "@hugeicons/core-free-icons";
 import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ export default function PublicError({
     <main className="mx-auto grid min-h-[65vh] max-w-7xl place-items-center px-4 py-16 text-center sm:px-6 lg:px-8">
       <div>
         <span className="mx-auto grid size-12 place-items-center rounded-xl bg-destructive/10 text-destructive">
-          <AlertTriangle className="size-5" aria-hidden="true" />
+          <HugeiconsIcon icon={Alert01Icon} className="size-5" aria-hidden="true" />
         </span>
         <h1 className="mt-5 text-2xl font-bold">This page hit an unexpected error</h1>
         <p className="mt-2 text-sm text-muted-foreground">

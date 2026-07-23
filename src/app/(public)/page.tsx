@@ -1,247 +1,243 @@
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  ArrowRight,
-  BadgeCheck,
-  Box,
-  Boxes,
-  CheckCircle2,
-  CircleDot,
-  Code2,
-  FileCode2,
-  GitBranch,
-  GitPullRequest,
-  Search,
-  ShieldCheck,
-  Workflow,
-} from "lucide-react";
+  ArrowRight01Icon,
+  CheckmarkBadge01Icon,
+  CheckmarkCircle02Icon,
+  CodeIcon,
+  FileCode,
+  GitBranchIcon,
+  GitPullRequestIcon,
+  Package01Icon,
+  Search01Icon,
+  Shield01Icon,
+  WorkflowCircle01Icon,
+} from "@hugeicons/core-free-icons";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { softwareCatalog } from "@/lib/site";
 
+const provenanceRows = [
+  { icon: GitBranchIcon, label: "Source", value: "public repository" },
+  { icon: WorkflowCircle01Icon, label: "Workflow", value: "GitHub Actions" },
+  { icon: FileCode, label: "Release", value: "version tag" },
+  { icon: Package01Icon, label: "Asset", value: "GitHub Release" },
+] as const;
+
 const publishingSteps = [
   {
-    icon: GitBranch,
-    index: "01",
+    icon: GitBranchIcon,
     title: "Connect a repository",
-    description: "Grant the GitHub App access to a public plugin repository you control.",
+    description: "Grant the BedrockNexus GitHub App access to a public plugin repository.",
   },
   {
-    icon: Code2,
-    index: "02",
+    icon: CodeIcon,
     title: "Detect and configure",
     description: "An adapter identifies the software, build tool, language, and expected output.",
   },
   {
-    icon: GitPullRequest,
-    index: "03",
+    icon: GitPullRequestIcon,
     title: "Publish through GitHub",
-    description: "Review a generated workflow pull request and release from version tags.",
+    description: "Review the generated workflow pull request and release from version tags.",
   },
 ] as const;
 
 const trustSignals = [
   {
-    icon: Workflow,
+    icon: WorkflowCircle01Icon,
     title: "Traceable builds",
-    description: "Connect every version to its workflow run, commit, tag, release, and asset.",
+    description: "Every version points back to its workflow run, commit, tag, release, and asset.",
   },
   {
-    icon: ShieldCheck,
+    icon: Shield01Icon,
     title: "No mystery uploads",
-    description: "Release files stay on GitHub. The platform never runs repository code itself.",
+    description: "Release files stay on GitHub. BedrockNexus never runs repository code.",
   },
   {
-    icon: Boxes,
-    title: "Software adapters",
-    description: "A modular contract keeps the registry open to more Bedrock server ecosystems.",
+    icon: CheckmarkBadge01Icon,
+    title: "Clear provenance",
+    description: "Verified Build describes a traceable build path, not a security guarantee.",
   },
 ] as const;
 
 export default function HomePage() {
   return (
-    <main className="flex-1 overflow-hidden">
-      <section className="relative border-b border-border/70">
-        <div className="site-grid pointer-events-none absolute inset-0" aria-hidden="true" />
-        <div
-          className="pointer-events-none absolute -left-40 top-24 size-[30rem] rounded-full bg-primary/12 blur-[110px]"
-          aria-hidden="true"
-        />
-        <div
-          className="pointer-events-none absolute -right-40 -top-24 size-[28rem] rounded-full bg-brand-sky/10 blur-[110px]"
-          aria-hidden="true"
-        />
-
-        <div className="relative mx-auto grid max-w-7xl gap-14 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:px-8 lg:py-28">
-          <div>
-            <Badge variant="accent" className="mb-6">
-              <CircleDot aria-hidden="true" /> GitHub-native Bedrock registry
+    <main className="flex-1">
+      <section className="relative isolate overflow-hidden border-b">
+        <div className="site-grid absolute inset-0 -z-20" />
+        <div className="absolute -top-40 right-0 -z-10 size-120 rounded-full bg-primary/20 blur-3xl" />
+        <div className="container mx-auto grid min-h-[680px] items-center gap-12 px-4 py-16 md:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:py-24">
+          <div className="max-w-3xl">
+            <Badge className="mb-6 gap-2" variant="outline">
+              <span className="size-1.5 rounded-full bg-primary ring-4 ring-primary/20" />
+              GitHub-native Bedrock registry
             </Badge>
-            <h1 className="text-balance max-w-4xl text-5xl font-bold tracking-[-0.055em] sm:text-6xl lg:text-7xl">
-              Ship Bedrock plugins with a build trail users can follow.
+            <h1 className="text-balance font-bold text-5xl leading-[1.03] tracking-[-0.045em] sm:text-6xl lg:text-7xl">
+              Ship Bedrock plugins with a{" "}
+              <span className="relative whitespace-nowrap">
+                build trail
+                <span className="absolute inset-x-0 bottom-1 -z-10 h-3 bg-primary/70 sm:h-4" />
+              </span>{" "}
+              users can follow.
             </h1>
-            <p className="mt-6 max-w-2xl text-balance text-lg leading-8 text-muted-foreground sm:text-xl">
-              One place to publish, discover, and understand extensions for every Minecraft Bedrock
-              server software—powered by public repositories and GitHub Releases.
+            <p className="mt-7 max-w-2xl text-base text-muted-foreground leading-7 sm:text-lg">
+              BedrockNexus connects public repositories to discoverable plugin pages while GitHub
+              remains the source of truth for code, builds, and release assets.
             </p>
 
-            <search>
-              <form action="/explore" className="mt-9 flex max-w-2xl flex-col gap-3 sm:flex-row">
-                <label htmlFor="project-search" className="relative flex-1">
-                  <Search
-                    className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            <search className="mt-9 block">
+              <form action="/explore" className="flex max-w-xl flex-col gap-3 sm:flex-row">
+                <label className="relative min-w-0 flex-1" htmlFor="home-registry-search">
+                  <HugeiconsIcon
+                    icon={Search01Icon}
+                    className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground"
                     aria-hidden="true"
                   />
-                  <span className="sr-only">Search projects</span>
+                  <span className="sr-only">Search the plugin registry</span>
                   <Input
-                    id="project-search"
+                    className="h-11 bg-background pl-10 shadow-sm"
+                    id="home-registry-search"
                     name="q"
+                    placeholder="Search plugins and creators"
                     type="search"
-                    placeholder="Search projects, software, or creators"
-                    className="h-12 bg-card/85 pl-11 shadow-sm"
                   />
                 </label>
-                <Button type="submit" size="lg">
-                  Explore registry <ArrowRight aria-hidden="true" />
+                <Button className="h-11 gap-2 font-semibold" type="submit">
+                  Explore registry
+                  <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" aria-hidden="true" />
                 </Button>
               </form>
             </search>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Registry data arrives with the Convex phase. Search currently opens the public
-              preview.
+          </div>
+
+          <Card className="relative overflow-hidden border-foreground/10 bg-card/95 py-0 shadow-2xl shadow-black/10 backdrop-blur">
+            <div className="h-1.5 bg-primary" />
+            <CardHeader className="border-b py-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <CardDescription className="font-mono text-xs uppercase tracking-[0.18em]">
+                    Release provenance
+                  </CardDescription>
+                  <CardTitle className="mt-2 text-xl">A build path, not a black box</CardTitle>
+                </div>
+                <Badge className="gap-1.5" variant="accent">
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle02Icon}
+                    className="size-3.5"
+                    aria-hidden="true"
+                  />
+                  Verified build
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-3">
+                {provenanceRows.map((row) => (
+                  <div
+                    className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border bg-muted/45 p-3"
+                    key={row.label}
+                  >
+                    <span className="grid size-9 place-items-center rounded-md bg-primary text-primary-foreground">
+                      <HugeiconsIcon icon={row.icon} className="size-4" aria-hidden="true" />
+                    </span>
+                    <span className="font-medium text-sm">{row.label}</span>
+                    <span className="text-right text-muted-foreground text-sm">{row.value}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-5 border-t pt-5 text-muted-foreground text-xs leading-5">
+                Each public release can be traced to the repository state and GitHub workflow that
+                produced it.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      <section className="py-16 sm:py-24">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="mb-10 max-w-3xl">
+            <p className="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em]">
+              <span className="size-2 bg-primary" />
+              Publish without leaving GitHub
+            </p>
+            <h2 className="text-balance font-bold text-3xl tracking-tight md:text-5xl">
+              Your repository remains the source of truth.
+            </h2>
+            <p className="mt-4 max-w-2xl text-muted-foreground leading-7">
+              BedrockNexus coordinates the publishing path. GitHub performs the build and hosts the
+              permanent release asset.
             </p>
           </div>
 
-          <div className="relative mx-auto w-full max-w-xl lg:mx-0">
-            <div
-              className="absolute -inset-8 rounded-[3rem] bg-gradient-to-br from-primary/15 via-transparent to-brand-sky/15 blur-2xl"
-              aria-hidden="true"
-            />
-            <Card className="relative overflow-hidden border-foreground/10 bg-card/88 shadow-2xl backdrop-blur">
-              <CardHeader className="border-b border-border/70 pb-5">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <span className="grid size-10 place-items-center rounded-xl bg-foreground text-background">
-                      <FileCode2 className="size-5" aria-hidden="true" />
+          <div className="grid gap-5 md:grid-cols-3">
+            {publishingSteps.map((step, index) => (
+              <Card className="relative overflow-hidden shadow-none" key={step.title}>
+                <CardHeader>
+                  <div className="mb-8 flex items-center justify-between">
+                    <span className="grid size-11 place-items-center rounded-lg bg-primary text-primary-foreground">
+                      <HugeiconsIcon icon={step.icon} className="size-5" aria-hidden="true" />
                     </span>
-                    <div>
-                      <CardTitle>Release provenance</CardTitle>
-                      <CardDescription className="mt-1 font-mono text-xs">
-                        v2.4.0 · example/plugin
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <Badge variant="accent">
-                    <BadgeCheck aria-hidden="true" /> Verified build
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-1 py-1">
-                {[
-                  { label: "Source", value: "8f4c2b1", icon: GitBranch },
-                  { label: "Workflow", value: "run #184", icon: Workflow },
-                  { label: "Release", value: "GitHub Release", icon: Box },
-                  { label: "Asset", value: "example-2.4.0.jar", icon: CheckCircle2 },
-                ].map(({ label, value, icon: Icon }, index) => (
-                  <div key={label} className="relative flex items-center gap-4 py-3.5">
-                    {index < 3 && (
-                      <span
-                        className="absolute left-[17px] top-10 h-5 w-px bg-border"
-                        aria-hidden="true"
-                      />
-                    )}
-                    <span className="grid size-9 shrink-0 place-items-center rounded-full border bg-background text-primary">
-                      <Icon className="size-4" aria-hidden="true" />
+                    <span className="font-mono font-semibold text-muted-foreground text-xs">
+                      0{index + 1}
                     </span>
-                    <span className="text-sm text-muted-foreground">{label}</span>
-                    <span className="ml-auto font-mono text-xs font-semibold">{value}</span>
                   </div>
-                ))}
-              </CardContent>
-              <div className="border-t border-border/70 bg-muted/50 px-6 py-4 font-mono text-xs text-muted-foreground">
-                Built on GitHub · downloaded from GitHub
-              </div>
-            </Card>
+                  <CardTitle className="text-lg">{step.title}</CardTitle>
+                  <CardDescription className="leading-6">{step.description}</CardDescription>
+                </CardHeader>
+                <div className="absolute inset-x-0 bottom-0 h-0.5 bg-primary/70" />
+              </Card>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
-        <div className="max-w-2xl">
-          <p className="font-mono text-xs font-semibold tracking-[0.16em] text-primary uppercase">
-            Publish without leaving GitHub
-          </p>
-          <h2 className="mt-3 text-balance text-3xl font-bold tracking-[-0.04em] sm:text-4xl">
-            Your repository remains the source of truth.
-          </h2>
-          <p className="mt-4 text-base leading-7 text-muted-foreground">
-            BedrockNexus coordinates the publishing path. GitHub performs the build and hosts every
-            permanent release asset.
-          </p>
-        </div>
-
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
-          {publishingSteps.map((step) => (
-            <Card
-              key={step.index}
-              className="relative overflow-hidden transition-transform hover:-translate-y-1"
-            >
-              <span className="absolute right-5 top-3 font-mono text-5xl font-black text-foreground/[0.045]">
-                {step.index}
-              </span>
-              <CardHeader>
-                <span className="mb-4 grid size-11 place-items-center rounded-xl bg-primary/10 text-primary">
-                  <step.icon className="size-5" aria-hidden="true" />
-                </span>
-                <CardTitle className="text-lg">{step.title}</CardTitle>
-                <CardDescription>{step.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="border-y border-border/70 bg-muted/45">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
-          <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+      <section className="border-y bg-muted">
+        <div className="container mx-auto px-4 py-16 md:px-6 sm:py-24">
+          <div className="mb-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div className="max-w-2xl">
-              <p className="font-mono text-xs font-semibold tracking-[0.16em] text-primary uppercase">
+              <p className="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em]">
+                <span className="size-2 bg-primary" />
                 Initial ecosystem
               </p>
-              <h2 className="mt-3 text-3xl font-bold tracking-[-0.04em] sm:text-4xl">
+              <h2 className="font-bold text-3xl tracking-tight md:text-5xl">
                 Two adapters. One extensible platform.
               </h2>
             </div>
-            <Link href="/software" className={buttonVariants({ variant: "outline" })}>
-              View software directory <ArrowRight aria-hidden="true" />
+            <Link href="/software">
+              <Button className="gap-2" variant="outline">
+                Software directory
+                <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" aria-hidden="true" />
+              </Button>
             </Link>
           </div>
 
-          <div className="mt-10 grid gap-5 md:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-2">
             {softwareCatalog.map((software) => (
               <Link
-                key={software.slug}
+                className="group rounded-xl"
                 href={`/software/${software.slug}`}
-                className="group rounded-2xl"
+                key={software.slug}
               >
-                <Card className="h-full transition-[border-color,transform] group-hover:-translate-y-1 group-hover:border-primary/35">
+                <Card className="h-full transition-[transform,border-color] group-hover:-translate-y-1 group-hover:border-primary/60">
                   <CardHeader className="grid-cols-[auto_1fr_auto] items-center gap-x-4">
-                    <span
-                      className={`row-span-2 grid size-12 place-items-center rounded-xl ${
-                        software.tone === "emerald"
-                          ? "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400"
-                          : "bg-sky-500/12 text-sky-600 dark:text-sky-400"
-                      }`}
-                    >
-                      <Box className="size-5" aria-hidden="true" />
+                    <span className="row-span-2 grid size-12 place-items-center rounded-lg bg-primary text-primary-foreground">
+                      <HugeiconsIcon icon={Package01Icon} className="size-5" aria-hidden="true" />
                     </span>
                     <CardTitle className="col-start-2 text-lg">{software.name}</CardTitle>
                     <CardDescription className="col-start-2">
                       {software.language} · {software.format}
                     </CardDescription>
-                    <ArrowRight className="col-start-3 row-span-2 row-start-1 size-5 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+                    <Badge className="col-start-3 row-start-1" variant="outline">
+                      {software.status}
+                    </Badge>
+                    <HugeiconsIcon
+                      icon={ArrowRight01Icon}
+                      className="col-start-3 row-start-2 size-4 justify-self-end text-muted-foreground transition-transform group-hover:translate-x-1"
+                    />
                   </CardHeader>
                 </Card>
               </Link>
@@ -250,51 +246,52 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
-          <div>
-            <Badge variant="outline">Designed for trust, not hype</Badge>
-            <h2 className="mt-5 text-balance text-3xl font-bold tracking-[-0.04em] sm:text-4xl">
-              Clear provenance for every public release.
-            </h2>
-            <p className="mt-4 text-base leading-7 text-muted-foreground">
-              A Verified Build describes traceability—not a security guarantee. Project pages will
-              keep source and build evidence visible.
+      <section className="py-16 sm:py-24">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="mb-10 max-w-2xl">
+            <p className="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em]">
+              <span className="size-2 bg-primary" />
+              Designed for trust, not hype
             </p>
+            <h2 className="font-bold text-3xl tracking-tight md:text-5xl">
+              Useful signals without vague promises.
+            </h2>
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
+
+          <div className="grid gap-5 md:grid-cols-3">
             {trustSignals.map((signal) => (
-              <div key={signal.title} className="rounded-2xl border bg-card p-5">
-                <signal.icon className="size-5 text-primary" aria-hidden="true" />
-                <h3 className="mt-8 font-semibold">{signal.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{signal.description}</p>
+              <div className="border-t pt-7" key={signal.title}>
+                <HugeiconsIcon icon={signal.icon} className="size-5" aria-hidden="true" />
+                <h3 className="mt-7 font-semibold">{signal.title}</h3>
+                <p className="mt-2 text-muted-foreground text-sm leading-6">{signal.description}</p>
               </div>
             ))}
           </div>
-        </div>
 
-        <div className="mt-20 overflow-hidden rounded-3xl border bg-foreground px-6 py-10 text-background shadow-xl sm:px-10 lg:flex lg:items-center lg:justify-between lg:px-14">
-          <div className="max-w-2xl">
-            <p className="font-mono text-xs font-semibold tracking-[0.16em] text-primary uppercase">
-              Built for plugin developers
-            </p>
-            <h2 className="mt-3 text-balance text-3xl font-bold tracking-[-0.04em] sm:text-4xl">
-              Preview the publishing workspace.
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-background/65">
-              Authentication and GitHub App connections arrive in the next phases. This preview does
-              not create an account or connect a repository.
-            </p>
+          <div className="relative mt-16 overflow-hidden rounded-xl bg-card px-6 py-10 text-card-foreground shadow-xs ring-1 ring-foreground/10 sm:px-10 sm:py-12">
+            <div className="absolute inset-x-0 top-0 h-1 bg-primary" />
+            <div className="relative flex flex-col gap-7 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-2xl">
+                <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em]">
+                  <span className="size-2 bg-primary" />
+                  Built for plugin developers
+                </p>
+                <h2 className="mt-3 font-bold text-3xl tracking-tight sm:text-4xl">
+                  Open your publishing workspace.
+                </h2>
+                <p className="mt-3 text-muted-foreground leading-7">
+                  GitHub sign-in and profile sync are live. Repository connection arrives with the
+                  GitHub App phase.
+                </p>
+              </div>
+              <Link href="/dashboard">
+                <Button className="gap-2" size="lg">
+                  Developer dashboard
+                  <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" aria-hidden="true" />
+                </Button>
+              </Link>
+            </div>
           </div>
-          <Link
-            href="/dashboard"
-            className={buttonVariants({
-              size: "lg",
-              className: "mt-7 bg-primary text-primary-foreground hover:bg-primary/90 lg:mt-0",
-            })}
-          >
-            Open dashboard preview <ArrowRight aria-hidden="true" />
-          </Link>
         </div>
       </section>
     </main>
