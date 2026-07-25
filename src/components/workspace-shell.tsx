@@ -2,10 +2,16 @@
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  Alert01Icon,
+  Analytics01Icon,
   ArrowLeft01Icon,
+  Clock01Icon,
   DashboardCircleIcon,
+  Package01Icon,
+  Rocket01Icon,
   Settings01Icon,
   Shield01Icon,
+  WebhookIcon,
 } from "@hugeicons/core-free-icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -17,8 +23,17 @@ import { cn } from "@/lib/utils";
 
 const dashboardNavigation = [
   { href: "/dashboard", label: "Dashboard", icon: DashboardCircleIcon, exact: true },
+  { href: "/dashboard/projects", label: "Projects", icon: Package01Icon, exact: false },
+  { href: "/dashboard/publish", label: "Publish", icon: Rocket01Icon, exact: false },
+  { href: "/dashboard/analytics", label: "Analytics", icon: Analytics01Icon, exact: false },
   { href: "/settings/account", label: "Account", icon: Settings01Icon, exact: false },
-  { href: "/settings/security", label: "Security", icon: Shield01Icon, exact: false },
+] as const;
+
+const adminNavigation = [
+  { href: "/admin", label: "Overview", icon: Shield01Icon, exact: true },
+  { href: "/admin/reports", label: "Reports", icon: Alert01Icon, exact: false },
+  { href: "/admin/deliveries", label: "Deliveries", icon: WebhookIcon, exact: false },
+  { href: "/admin/history", label: "History", icon: Clock01Icon, exact: false },
 ] as const;
 
 function isActiveRoute(pathname: string, href: string, exact = false) {
@@ -28,9 +43,7 @@ function isActiveRoute(pathname: string, href: string, exact = false) {
 export function WorkspaceShell({ label, children }: { label: string; children: ReactNode }) {
   const pathname = usePathname();
   const isAdministration = label === "Administration";
-  const navigation = isAdministration
-    ? [{ href: "/admin", label: "Moderation", icon: Shield01Icon, exact: true } as const]
-    : dashboardNavigation;
+  const navigation = isAdministration ? adminNavigation : dashboardNavigation;
 
   return (
     <div className="min-h-screen bg-muted/35">
@@ -67,7 +80,7 @@ export function WorkspaceShell({ label, children }: { label: string; children: R
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex h-12 min-w-0 flex-1 items-center justify-center gap-2 px-2 font-medium text-muted-foreground text-xs transition-colors hover:text-foreground sm:flex-none sm:justify-start sm:px-3 sm:text-sm",
+                  "relative flex h-12 shrink-0 items-center gap-2 px-3 font-medium text-muted-foreground text-xs transition-colors hover:text-foreground sm:text-sm",
                   active &&
                     "text-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:bg-primary",
                 )}
@@ -79,7 +92,7 @@ export function WorkspaceShell({ label, children }: { label: string; children: R
           })}
           <Link
             href="/"
-            className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 px-2 font-medium text-muted-foreground text-xs transition-colors hover:text-foreground sm:hidden"
+            className="flex h-12 shrink-0 items-center gap-2 px-3 font-medium text-muted-foreground text-xs transition-colors hover:text-foreground sm:hidden"
           >
             <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" aria-hidden="true" />
             Website

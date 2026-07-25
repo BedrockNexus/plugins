@@ -139,19 +139,44 @@ Acceptance:
 - Public and authenticated layouts work without horizontal overflow at desktop
   and mobile breakpoints.
 
+## Pre-Phase 3 — Product surface prototypes
+
+- [x] Map planned Phase 4–9 workflows to public, developer, and administration
+  routes before finalizing the Convex domain model.
+- [x] Add shared, visibly labeled prototype states that cannot be mistaken for
+  connected production records or actions.
+- [x] Design GitHub App installation, granted repository, adapter detection,
+  metadata review, workflow pull request, and publishing progress surfaces.
+- [x] Design developer project management, analytics, organizations, and
+  Plugins Pro capability-boundary surfaces.
+- [x] Design public project, version history, build provenance, creator, and
+  organization surfaces.
+- [x] Design moderation reports, webhook delivery observability, and immutable
+  admin-history surfaces.
+- [x] Validate representative public and authenticated prototype routes at
+  desktop and mobile breakpoints; production-build the protected admin routes.
+
+Acceptance:
+
+- The major Phase 4–9 user journeys can be reviewed before schema work begins.
+- Representative records are explicitly labeled and no disabled prototype
+  action claims to mutate backend state.
+- The screens expose the entities, statuses, roles, and relationships required
+  for Phase 3 schema design.
+
 ## Phase 3 — Core Convex domain model
 
-- [ ] Design tables and indexes for users, creator profiles, organizations,
+- [x] Design tables and indexes for users, creator profiles, organizations,
   organization members, GitHub installations, repositories, server software,
   projects, versions, builds, releases, release assets, downloads, categories,
   tags, reviews, ratings, support links, subscriptions, moderation reports,
   admin actions, and webhook deliveries.
-- [ ] Keep Better Auth tables owned by its Convex component.
-- [ ] Add canonical timestamps and normalized slugs.
-- [ ] Add public-project search and filter indexes.
-- [ ] Add backend authorization helpers shared by all domain functions.
-- [ ] Seed PocketMine-MP and PowerNukkitX software records idempotently.
-- [ ] Add tests for ownership, organization membership, roles, and visibility.
+- [x] Keep Better Auth tables owned by its Convex component.
+- [x] Add canonical timestamps and normalized slugs.
+- [x] Add public-project search and filter indexes.
+- [x] Add backend authorization helpers shared by all domain functions.
+- [x] Seed PocketMine-MP and PowerNukkitX software records idempotently.
+- [x] Add tests for ownership, organization membership, roles, and visibility.
 
 Acceptance:
 
@@ -159,28 +184,45 @@ Acceptance:
 - Every query/mutation uses an index where appropriate.
 - Publishing, moderation, and ownership rules cannot be bypassed from clients.
 
+Validation:
+
+- The schema and functions were pushed to the standalone development deployment.
+- The PMMP and PowerNukkitX seed ran twice with unchanged IDs and timestamps.
+- Format, lint, typecheck, all 13 tests, and the production build passed.
+
 ## Phase 4 — GitHub App integration
 
-- [ ] Register the separate `BedrockNexus Plugins` GitHub App.
-- [ ] Document and request only the permissions required for metadata, contents,
+- [x] Register the separate `BedrockNexus Plugins` GitHub App.
+- [x] Document and request only the permissions required for metadata, contents,
   pull requests, workflows, actions, releases, and relevant statuses/checks.
-- [ ] Subscribe only to installation, installation repositories, repository,
+- [x] Subscribe only to installation, installation repositories, repository,
   push, workflow run, and release events.
-- [ ] Add Octokit GitHub App authentication and installation-token helpers.
-- [ ] Implement the installation setup callback and ownership correlation.
-- [ ] List only repositories granted to an installation.
-- [ ] Reject private repositories in both UI and backend.
-- [ ] Fetch repository metadata and trees with rate-limit-aware error handling.
-- [ ] Verify webhook signatures against the raw request body.
-- [ ] Atomically claim GitHub delivery IDs before processing.
-- [ ] Add safe retries, processing status, error history, and duplicate handling.
-- [ ] Add fixture-based webhook integration tests.
+- [x] Add Octokit GitHub App authentication and installation-token helpers.
+- [x] Implement the installation setup callback and ownership correlation.
+- [x] List only repositories granted to an installation.
+- [x] Reject private repositories in both UI and backend.
+- [x] Fetch repository metadata and trees with rate-limit-aware error handling.
+- [x] Verify webhook signatures against the raw request body.
+- [x] Atomically claim GitHub delivery IDs before processing.
+- [x] Add safe retries, processing status, error history, and duplicate handling.
+- [x] Add fixture-based webhook integration tests.
 
 Acceptance:
 
 - A signed-in developer can install the GitHub App and see granted public repos.
 - Forged, duplicate, unsupported, and retried webhook deliveries are handled
   safely and observably.
+
+Implementation validation:
+
+- The Phase 4 Convex schema, functions, and generated bindings were pushed to
+  the standalone development deployment.
+- The organization-owned GitHub App is registered with the documented
+  permissions/events, and its development credentials are stored in Convex.
+- A live signed webhook request returned `202` with an ignored unsupported
+  event, confirming endpoint and secret alignment.
+- A signed-in installation smoke test connected the selected public
+  `BedrockNexus/example-php-plugin` repository and synchronized its metadata.
 
 ## Phase 5 — Adapter system
 

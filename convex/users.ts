@@ -1,13 +1,38 @@
 import { ConvexError, v } from "convex/values";
 
-import { mutation, query } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import { mutation, query, type MutationCtx } from "./_generated/server";
 import { authComponent } from "./auth";
+import { normalizeSlug } from "./lib/slugs";
 import { creatorProfileValidator, userValidator } from "./schema";
 
 const syncedUserValidator = v.object({
   user: userValidator,
   creatorProfile: creatorProfileValidator,
 });
+
+async function resolveCreatorSlug(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  profile: Doc<"creatorProfiles"> | null,
+  displayName: string,
+) {
+  if (profile?.slug) {
+    return profile.slug;
+  }
+
+  const baseSlug = normalizeSlug(displayName) || "creator";
+  const existing = await ctx.db
+    .query("creatorProfiles")
+    .withIndex("by_slug", (query) => query.eq("slug", baseSlug))
+    .unique();
+
+  if (!existing || existing._id === profile?._id) {
+    return baseSlug;
+  }
+
+  return `${baseSlug}-${userId}`;
+}
 
 export const syncCurrentUser = mutation({
   args: {},
@@ -61,11 +86,13 @@ export const syncCurrentUser = mutation({
       .query("creatorProfiles")
       .withIndex("by_user_id", (query) => query.eq("userId", userId))
       .unique();
+    const creatorSlug = await resolveCreatorSlug(ctx, userId, existingProfile, authUser.name);
 
     const creatorProfileId = existingProfile
       ? existingProfile._id
       : await ctx.db.insert("creatorProfiles", {
           userId,
+          slug: creatorSlug,
           displayName: authUser.name,
           ...(image ? { avatarUrl: image } : {}),
           createdAt: now,
@@ -74,6 +101,7 @@ export const syncCurrentUser = mutation({
 
     if (existingProfile) {
       await ctx.db.patch("creatorProfiles", existingProfile._id, {
+        slug: creatorSlug,
         displayName: authUser.name,
         avatarUrl: image,
         updatedAt: now,

@@ -1,20 +1,68 @@
 import {
-  CheckmarkCircle02Icon,
+  Analytics01Icon,
+  Building03Icon,
   GitBranchIcon,
-  WorkflowSquare01Icon,
+  Package01Icon,
+  Rocket01Icon,
+  Shield01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { Metadata } from "next";
+import type { Metadata, Route } from "next";
+import Link from "next/link";
 
-import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
+import {
+  MetricCard,
+  PrototypeBanner,
+  PrototypeFeatureCard,
+  PrototypeSection,
+} from "@/components/prototype-ui";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
-const foundationStatus = [
-  { icon: GitBranchIcon, label: "GitHub identity", value: "Connected" },
-  { icon: CheckmarkCircle02Icon, label: "Profile sync", value: "Active" },
-  { icon: WorkflowSquare01Icon, label: "Publishing workflow", value: "Next phase" },
+const workspaceAreas = [
+  {
+    href: "/dashboard/repositories",
+    icon: GitBranchIcon,
+    title: "Repositories",
+    description: "Install the GitHub App, review granted repositories, and begin detection.",
+    action: "Connect repository",
+  },
+  {
+    href: "/dashboard/publish",
+    icon: Rocket01Icon,
+    title: "Publishing",
+    description: "Review detection, metadata, workflow setup, and release readiness.",
+    action: "Open publishing flow",
+  },
+  {
+    href: "/dashboard/projects",
+    icon: Package01Icon,
+    title: "Projects",
+    description: "Manage public project metadata, versions, compatibility, and visibility.",
+    action: "Manage projects",
+  },
+  {
+    href: "/dashboard/analytics",
+    icon: Analytics01Icon,
+    title: "Analytics",
+    description: "Understand discovery, downloads, publishing health, and release adoption.",
+    action: "View analytics",
+  },
+  {
+    href: "/dashboard/organizations",
+    icon: Building03Icon,
+    title: "Organizations",
+    description: "Coordinate project ownership, members, roles, and shared publishing.",
+    action: "Preview organizations",
+  },
+  {
+    href: "/dashboard/pro",
+    icon: Shield01Icon,
+    title: "Plugins Pro",
+    description: "Preview advanced analytics, organizations, API access, and profile controls.",
+    action: "Preview Pro",
+  },
 ] as const;
 
 export const metadata: Metadata = {
@@ -25,33 +73,45 @@ export const metadata: Metadata = {
 export default function DashboardPage() {
   return (
     <PageShell
-      eyebrow="Authenticated route group"
-      title="Developer dashboard"
-      description="Manage GitHub connections, publishing progress, builds, releases, projects, and analytics from one workspace."
-      actions={<Badge variant="outline">GitHub account connected</Badge>}
+      eyebrow="Developer workspace"
+      title="Build, publish, and understand your plugins."
+      description="The workspace brings repository connection, publishing progress, project management, and analytics into one focused workflow."
+      actions={<Badge variant="accent">Prototype milestone</Badge>}
     >
-      <div className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-3">
-          {foundationStatus.map((item) => (
-            <Card className="shadow-none" key={item.label}>
-              <CardContent className="flex items-center gap-3">
-                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
-                  <HugeiconsIcon icon={item.icon} className="size-4" aria-hidden="true" />
-                </span>
-                <div>
-                  <p className="text-muted-foreground text-xs">{item.label}</p>
-                  <p className="mt-1 font-medium text-sm">{item.value}</p>
-                </div>
-              </CardContent>
-            </Card>
+      <PrototypeBanner>
+        The workspace cards below link to planned product surfaces for Phases 4–9. They use
+        representative states and do not perform backend actions.
+      </PrototypeBanner>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <MetricCard label="Connected repos" value="1" detail="Representative granted repository" />
+        <MetricCard label="Published projects" value="1" detail="Prototype public project" />
+        <MetricCard label="Release health" value="Ready" detail="No live workflow is connected" />
+      </div>
+
+      <PrototypeSection
+        title="Workspace surfaces"
+        description="Explore the product flow before the domain model is finalized."
+      >
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {workspaceAreas.map((area) => (
+            <PrototypeFeatureCard
+              description={area.description}
+              icon={area.icon}
+              key={area.href}
+              title={area.title}
+              footer={
+                <Link href={area.href as Route}>
+                  <Button className="w-full justify-between" variant="outline">
+                    {area.action}
+                    <HugeiconsIcon className="size-4" icon={Rocket01Icon} />
+                  </Button>
+                </Link>
+              }
+            />
           ))}
         </div>
-        <EmptyState
-          icon={GitBranchIcon}
-          title="Your publishing workspace is ready"
-          description="Repository connection and publishing arrive in later phases. Authentication and backend profile synchronization are active."
-        />
-      </div>
+      </PrototypeSection>
     </PageShell>
   );
 }

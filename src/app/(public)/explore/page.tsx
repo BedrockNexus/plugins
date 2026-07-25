@@ -1,12 +1,14 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FilterIcon, Search01Icon, SearchMinusIcon } from "@hugeicons/core-free-icons";
-import type { Metadata } from "next";
+import type { Metadata, Route } from "next";
+import Link from "next/link";
 
 import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { prototypeProject } from "@/lib/prototype-data";
 
 export const metadata: Metadata = {
   title: "Explore",
@@ -53,6 +55,11 @@ export default function ExplorePage() {
         icon={SearchMinusIcon}
         title="The registry is ready for data"
         description="Project search and filtering connect to Convex in Phase 7. Until trusted records exist, the registry deliberately avoids showing simulated projects."
+        action={
+          <Link href={`/projects/${prototypeProject.slug}` as Route}>
+            <Button variant="outline">View representative project design</Button>
+          </Link>
+        }
       />
     </PageShell>
   );

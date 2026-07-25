@@ -8,6 +8,12 @@ const app = defineApp({
     BETTER_AUTH_SECRET: v.string(),
     GITHUB_CLIENT_ID: v.optional(v.string()),
     GITHUB_CLIENT_SECRET: v.optional(v.string()),
+    GITHUB_APP_ID: v.optional(v.string()),
+    GITHUB_APP_CLIENT_ID: v.optional(v.string()),
+    GITHUB_APP_CLIENT_SECRET: v.optional(v.string()),
+    GITHUB_APP_PRIVATE_KEY: v.optional(v.string()),
+    GITHUB_APP_WEBHOOK_SECRET: v.optional(v.string()),
+    GITHUB_APP_SLUG: v.optional(v.string()),
   },
 });
 

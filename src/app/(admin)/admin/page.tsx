@@ -1,22 +1,37 @@
-import {
-  Alert01Icon,
-  Clock01Icon,
-  Shield01Icon,
-  WorkflowSquare01Icon,
-} from "@hugeicons/core-free-icons";
+import { Alert01Icon, Clock01Icon, Shield01Icon, WebhookIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { Metadata } from "next";
+import type { Metadata, Route } from "next";
+import Link from "next/link";
 
-import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
+import {
+  MetricCard,
+  PrototypeBanner,
+  PrototypeFeatureCard,
+  PrototypeSection,
+} from "@/components/prototype-ui";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
-const moderationAreas = [
-  { icon: Shield01Icon, label: "Project review" },
-  { icon: Alert01Icon, label: "Reports" },
-  { icon: WorkflowSquare01Icon, label: "Failed deliveries" },
-  { icon: Clock01Icon, label: "Admin history" },
+const adminAreas = [
+  {
+    href: "/admin/reports",
+    icon: Alert01Icon,
+    title: "Reports and review",
+    description: "Triage pending projects, user reports, and visibility decisions.",
+  },
+  {
+    href: "/admin/deliveries",
+    icon: WebhookIcon,
+    title: "Webhook deliveries",
+    description: "Inspect processing state, retries, duplicate deliveries, and failure history.",
+  },
+  {
+    href: "/admin/history",
+    icon: Clock01Icon,
+    title: "Immutable history",
+    description: "Review a permanent record of server-authorized moderation actions.",
+  },
 ] as const;
 
 export const metadata: Metadata = {
@@ -27,30 +42,42 @@ export const metadata: Metadata = {
 export default function AdminPage() {
   return (
     <PageShell
-      eyebrow="Admin route group"
-      title="Moderation workspace"
-      description="Review projects, reports, failed deliveries, suspicious activity, software definitions, and immutable admin history."
-      actions={<Badge variant="outline">Server-authorized admin</Badge>}
+      eyebrow="Phase 8 operations prototype"
+      title="Moderation and delivery operations"
+      description="Review projects, reports, suspicious activity, failed deliveries, and immutable administrative history."
+      actions={<Badge variant="accent">Server-authorized admin</Badge>}
     >
-      <div className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {moderationAreas.map((area) => (
-            <Card className="shadow-none" key={area.label}>
-              <CardContent className="flex items-center gap-3">
-                <span className="grid size-10 place-items-center rounded-lg bg-primary text-primary-foreground">
-                  <HugeiconsIcon icon={area.icon} className="size-4" aria-hidden="true" />
-                </span>
-                <span className="font-medium text-sm">{area.label}</span>
-              </CardContent>
-            </Card>
+      <PrototypeBanner>
+        Queues and operational records are representative. This route remains protected by the
+        existing backend admin-role query.
+      </PrototypeBanner>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <MetricCard label="Pending review" value="4" detail="Representative queue depth" />
+        <MetricCard label="Open reports" value="2" detail="One high priority" />
+        <MetricCard label="Failed deliveries" value="3" detail="Retry state preview" />
+      </div>
+
+      <PrototypeSection title="Operational surfaces">
+        <div className="grid gap-5 md:grid-cols-3">
+          {adminAreas.map((area) => (
+            <PrototypeFeatureCard
+              description={area.description}
+              icon={area.icon}
+              key={area.href}
+              title={area.title}
+              footer={
+                <Link href={area.href as Route}>
+                  <Button className="w-full justify-between" variant="outline">
+                    Open prototype
+                    <HugeiconsIcon className="size-4" icon={Shield01Icon} />
+                  </Button>
+                </Link>
+              }
+            />
           ))}
         </div>
-        <EmptyState
-          icon={Shield01Icon}
-          title="Moderation queues arrive in Phase 8"
-          description="This page is already protected by a Convex admin-role query. Later phases will add the moderation records and actions."
-        />
-      </div>
+      </PrototypeSection>
     </PageShell>
   );
 }
