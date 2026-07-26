@@ -2,7 +2,7 @@ import { Analytics01Icon, Download01Icon, ViewIcon } from "@hugeicons/core-free-
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { Metadata } from "next";
 
-import { PageShell } from "@/components/page-shell";
+import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import { MetricCard, PrototypeBanner, PrototypeSection } from "@/components/prototype-ui";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,10 +16,10 @@ export const metadata: Metadata = {
 
 export default function AnalyticsPrototypePage() {
   return (
-    <PageShell
-      eyebrow="Phases 8–9 prototype"
+    <DashboardPageShell
+      eyebrow="Phase 8 prototype"
       title="Understand project adoption"
-      description="Basic totals remain free. Plugins Pro adds deeper release, source, and publishing-funnel analysis."
+      description="Track downloads, releases, traffic sources, and publishing-funnel activity."
       actions={<Badge variant="accent">Representative metrics</Badge>}
     >
       <PrototypeBanner>
@@ -35,11 +35,7 @@ export default function AnalyticsPrototypePage() {
           value="45.1%"
           detail="Views that reached download redirect"
         />
-        <MetricCard
-          label="Release adoption"
-          value="71%"
-          detail="Latest version share · Pro preview"
-        />
+        <MetricCard label="Release adoption" value="71%" detail="Latest version share" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_0.6fr]">
@@ -75,13 +71,13 @@ export default function AnalyticsPrototypePage() {
                 <HugeiconsIcon className="size-4" icon={Analytics01Icon} />
                 Discovery funnel
               </CardTitle>
-              <CardDescription>Representative free and Pro boundaries.</CardDescription>
+              <CardDescription>Representative reporting signals.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               {[
                 { icon: ViewIcon, label: "Project views", value: "28.5K" },
                 { icon: Download01Icon, label: "Redirected downloads", value: "12.8K" },
-                { icon: Analytics01Icon, label: "Source attribution", value: "Pro" },
+                { icon: Analytics01Icon, label: "Source attribution", value: "Planned" },
               ].map((item) => (
                 <div
                   className="flex items-center gap-3 border-t pt-4 first:border-0 first:pt-0"
@@ -96,6 +92,6 @@ export default function AnalyticsPrototypePage() {
           </Card>
         </PrototypeSection>
       </div>
-    </PageShell>
+    </DashboardPageShell>
   );
 }

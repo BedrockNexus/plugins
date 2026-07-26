@@ -1,17 +1,17 @@
 "use client";
 
-import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  type AdditionalField as AdditionalFieldConfig,
+  resolveInputType,
+} from "@better-auth-ui/core";
+import { useAuth } from "@better-auth-ui/react";
 import {
   ArrowDown01Icon,
   Calendar01Icon,
   Copy01Icon,
   Tick01Icon,
 } from "@hugeicons/core-free-icons";
-import {
-  type AdditionalField as AdditionalFieldConfig,
-  resolveInputType,
-} from "@better-auth-ui/core";
-import { useAuth } from "@better-auth-ui/react";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { format } from "date-fns";
 import { type ComponentType, useRef, useState } from "react";
 import { toast } from "sonner";

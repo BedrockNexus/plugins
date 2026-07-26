@@ -1,7 +1,7 @@
 import { httpRouter } from "convex/server";
 
 import { authComponent, createAuth } from "./auth";
-import { githubWebhook } from "./github/webhookHttp";
+import { githubWebhook } from "./functions/github/webhookHttp";
 
 const http = httpRouter();
 

@@ -1,9 +1,9 @@
 "use client";
 
-import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowRight01Icon, Tick01Icon } from "@hugeicons/core-free-icons";
-import type * as React from "react";
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
+import { ArrowRight01Icon, Tick01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -242,18 +242,18 @@ function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<"spa
 
 export {
   DropdownMenu,
-  DropdownMenuPortal,
-  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
-  DropdownMenuLabel,
   DropdownMenuItem,
-  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuSub,
-  DropdownMenuSubTrigger,
   DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
 };

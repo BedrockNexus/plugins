@@ -1,13 +1,14 @@
 "use client";
 
-import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
-import type { AuthClient as ConvexAuthClient } from "@convex-dev/better-auth/react";
+import { organizationPlugin } from "@better-auth-ui/core/plugins";
 import type { AuthClient } from "@better-auth-ui/react";
+import type { AuthClient as ConvexAuthClient } from "@convex-dev/better-auth/react";
+import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ConvexReactClient } from "convex/react";
 import type { Route } from "next";
 import NextLink from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { ComponentPropsWithoutRef, PropsWithChildren, ReactNode } from "react";
 
 import { AuthProvider } from "@/components/auth/auth-provider";
@@ -34,6 +35,11 @@ function AuthLink({ href, to: _to, ...props }: AuthLinkProps) {
   return <NextLink {...props} href={href as Route} />;
 }
 
+function getOrganizationSlug(pathname: string) {
+  const [dashboard, organizations, slug] = pathname.split("/").filter(Boolean);
+  return dashboard === "dashboard" && organizations === "organizations" ? (slug ?? null) : null;
+}
+
 export function Providers({
   children,
   initialToken,
@@ -42,7 +48,9 @@ export function Providers({
   initialToken?: string | null;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const queryClient = getQueryClient();
+  const organizationSlug = getOrganizationSlug(pathname);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -54,6 +62,22 @@ export function Providers({
         <AuthProvider
           authClient={authClient as unknown as AuthClient}
           emailAndPassword={{ enabled: false }}
+          plugins={[
+            organizationPlugin({
+              slug: organizationSlug,
+              viewPaths: {
+                organization: {
+                  settings: "settings",
+                  people: "members",
+                },
+              },
+            }),
+          ]}
+          basePaths={{
+            auth: "/auth",
+            settings: "/settings",
+            organization: "/dashboard/organizations",
+          }}
           multipleAccountsPerProvider={false}
           redirectTo="/dashboard"
           socialProviders={["github"]}

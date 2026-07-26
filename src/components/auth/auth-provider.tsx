@@ -1,6 +1,6 @@
 import {
-  AuthProvider as AuthProviderPrimitive,
   type AuthPlugin,
+  AuthProvider as AuthProviderPrimitive,
   type AuthProviderProps,
 } from "@better-auth-ui/react";
 import type { ComponentPropsWithoutRef, ComponentType, PropsWithChildren, ReactNode } from "react";

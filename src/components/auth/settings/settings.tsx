@@ -1,9 +1,9 @@
 "use client";
 
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Shield01Icon, UserIcon } from "@hugeicons/core-free-icons";
 import type { SettingsView } from "@better-auth-ui/core";
 import { useAuth, useAuthenticate } from "@better-auth-ui/react";
+import { Shield01Icon, UserIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useMemo } from "react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

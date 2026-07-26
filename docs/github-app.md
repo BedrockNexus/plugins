@@ -30,17 +30,16 @@ Configure only these repository permissions:
 | Permission | Access | Why it is needed |
 | --- | --- | --- |
 | Metadata | Read-only | Identify the selected repository and its owner. GitHub requires this permission. |
-| Contents | Read and write | Read repository metadata and trees; later create a workflow branch and release assets through the GitHub-native publishing flow. GitHub Releases are covered by repository contents permission. |
-| Pull requests | Read and write | Create and track the workflow pull request in Phase 6. |
-| Workflows | Read and write | Add or update `.github/workflows/bedrocknexus-publish.yml` through that pull request. |
+| Contents | Read and write | Read repository metadata and trees, commit the managed workflow to the selected default branch, and manage GitHub Release assets. |
+| Workflows | Read and write | Add or update `.github/workflows/bedrocknexus-publish.yml` when the project owner explicitly installs or updates it. |
 | Actions | Read-only | Track workflow runs and link developers to GitHub-hosted logs. |
 | Checks | Read-only | Correlate check conclusions with a build. |
 | Commit statuses | Read-only | Correlate commit statuses with a build. |
 
-Do not request administration, issues, secrets, members, deployments, or any
-organization permission. Private repositories are not eligible: newly observed
-private repositories are discarded, and a previously public repository is
-marked ineligible if GitHub later reports it as private.
+Do not request pull requests, administration, issues, secrets, members,
+deployments, or any organization permission. Private repositories are not
+eligible: newly observed private repositories are discarded, and a previously
+public repository is marked ineligible if GitHub later reports it as private.
 
 ## Webhook subscriptions
 
@@ -77,6 +76,6 @@ the PEM newlines before creating the Octokit App client. Keep the Better Auth
 `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` values separate.
 
 After configuring the App, test with a public repository selected explicitly.
-Confirm the repository appears at `/dashboard/repositories`, a forged webhook
+Confirm the repository appears at `/dashboard/projects`, a forged webhook
 returns `401`, a duplicate returns `202` without reprocessing, and the delivery
 history appears at `/admin/deliveries` for moderators and administrators.

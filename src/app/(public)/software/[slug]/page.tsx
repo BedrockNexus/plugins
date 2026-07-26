@@ -1,88 +1,67 @@
-import {
-  CheckmarkCircle02Icon,
-  FileCode,
-  GitBranchIcon,
-  Package01Icon,
-  WorkflowSquare01Icon,
-} from "@hugeicons/core-free-icons";
+import { LinkSquare01Icon, Package01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-
 import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
+import { ProjectCard } from "@/components/registry/project-card";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { softwareCatalog } from "@/lib/site";
+import { buttonVariants } from "@/components/ui/button";
+import { api } from "../../../../../convex/_generated/api";
 
 type SoftwarePageProps = { params: Promise<{ slug: string }> };
 
-export function generateStaticParams() {
-  return softwareCatalog.map((software) => ({ slug: software.slug }));
-}
-
 export async function generateMetadata({ params }: SoftwarePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const software = softwareCatalog.find((item) => item.slug === slug);
-
-  return software
+  const result = await fetchQuery(api.functions.site.catalog.getSoftware, { slug });
+  return result
     ? {
-        title: software.name,
-        description: `Discover projects for ${software.name} on BedrockNexus Plugins.`,
-        alternates: { canonical: `/software/${software.slug}` },
+        title: result.software.name,
+        description: `Discover published ${result.software.name} projects on BedrockNexus Plugins.`,
+        alternates: { canonical: `/software/${result.software.slug}` },
       }
     : { title: "Software not found" };
 }
 
 export default async function SoftwareDetailPage({ params }: SoftwarePageProps) {
   const { slug } = await params;
-  const software = softwareCatalog.find((item) => item.slug === slug);
-
-  if (!software) notFound();
+  const result = await fetchQuery(api.functions.site.catalog.getSoftware, { slug });
+  if (!result) notFound();
 
   return (
     <PageShell
       eyebrow="Server software"
-      title={software.name}
-      description={`Adapter foundation for ${software.language} projects distributed as ${software.format} release assets.`}
-      actions={<Badge variant="accent">{software.status}</Badge>}
+      title={result.software.name}
+      description={result.software.description}
+      actions={
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="accent">{result.software.adapterId} adapter</Badge>
+          <a
+            className={buttonVariants({ variant: "outline" })}
+            href={result.software.websiteUrl}
+            rel="noreferrer"
+            target="_blank"
+          >
+            <HugeiconsIcon className="size-4" icon={LinkSquare01Icon} />
+            Official website
+          </a>
+        </div>
+      }
     >
-      <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+      {result.projects.length > 0 ? (
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {result.projects.map((project) => (
+            <ProjectCard key={project.projectId} project={project} />
+          ))}
+        </div>
+      ) : (
         <EmptyState
           icon={Package01Icon}
-          title={`No ${software.name} projects yet`}
-          description="Public projects appear here after the publishing, moderation, and registry phases are connected."
+          title={`No ${result.software.name} projects yet`}
+          description="The adapter is live. Verified public projects appear here after their first release is published."
         />
-        <Card className="shadow-none">
-          <CardHeader>
-            <CardTitle>Adapter contract</CardTitle>
-            <CardDescription>
-              What the initial integration is designed to recognize.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              { icon: FileCode, label: "Release format", value: software.format },
-              { icon: WorkflowSquare01Icon, label: "Project language", value: software.language },
-              { icon: GitBranchIcon, label: "Source model", value: "Public GitHub repository" },
-              { icon: CheckmarkCircle02Icon, label: "Adapter status", value: software.status },
-            ].map((item) => (
-              <div
-                className="flex items-center gap-3 border-t pt-4 first:border-t-0 first:pt-0"
-                key={item.label}
-              >
-                <span className="grid size-9 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground">
-                  <HugeiconsIcon icon={item.icon} className="size-4" aria-hidden="true" />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-muted-foreground text-xs">{item.label}</p>
-                  <p className="truncate font-medium text-sm">{item.value}</p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
+      )}
     </PageShell>
   );
 }

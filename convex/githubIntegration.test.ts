@@ -3,18 +3,26 @@
 import { convexTest } from "convex-test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { api, internal } from "./_generated/api";
-import type { Doc } from "./_generated/dataModel";
-import installationRepositoriesFixture from "./github/fixtures/installation-repositories.json";
-import pushFixture from "./github/fixtures/push.json";
+import { api, components, internal } from "./_generated/api";
+import betterAuthSchema from "./betterAuth/schema";
+import installationRepositoriesFixture from "./functions/github/fixtures/installation-repositories.json";
+import pushFixture from "./functions/github/fixtures/push.json";
 import {
   createGitHubWebhookSignature,
   verifyGitHubWebhookSignature,
-} from "./github/webhookSignature";
+} from "./functions/github/webhookSignature";
+import type { AppRole } from "./lib/authorization";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
+const betterAuthModules = import.meta.glob("./betterAuth/**/*.ts");
 const webhookSecret = "It's a Secret to Everybody";
+
+function createTest() {
+  const t = convexTest(schema, modules);
+  t.registerComponent("betterAuth", betterAuthSchema, betterAuthModules);
+  return t;
+}
 
 async function signedWebhookRequest(
   t: ReturnType<typeof convexTest>,
@@ -43,22 +51,66 @@ async function signedWebhookRequest(
 async function insertUser(
   t: ReturnType<typeof convexTest>,
   label: string,
-  role: Doc<"users">["role"] = "developer",
+  role: AppRole = "developer",
 ) {
-  const tokenIdentifier = `https://convex.test|${label}`;
-  const userId = await t.run(async (ctx) => {
+  const now = Date.now();
+  const user = await t.mutation(components.betterAuth.adapter.create, {
+    input: {
+      model: "user",
+      data: {
+        name: label,
+        email: `${label}@example.com`,
+        emailVerified: true,
+        role,
+        createdAt: now,
+        updatedAt: now,
+      },
+    },
+  });
+  const authUserId = user._id as string;
+  const session = await t.mutation(components.betterAuth.adapter.create, {
+    input: {
+      model: "session",
+      data: {
+        token: `session-${label}`,
+        userId: authUserId,
+        expiresAt: now + 60_000,
+        createdAt: now,
+        updatedAt: now,
+      },
+    },
+  });
+  const tokenIdentifier = `https://convex.test|${authUserId}`;
+  return {
+    authUserId,
+    tokenIdentifier,
+    client: t.withIdentity({
+      subject: authUserId,
+      sessionId: session._id as string,
+      tokenIdentifier,
+    }),
+  };
+}
+
+async function insertClaimedFixtureInstallation(
+  t: ReturnType<typeof convexTest>,
+  authUserId: string,
+) {
+  return await t.run(async (ctx) => {
     const now = Date.now();
-    return await ctx.db.insert("users", {
-      authUserId: `auth-${label}`,
-      authTokenIdentifier: tokenIdentifier,
-      name: label,
-      email: `${label}@example.com`,
-      role,
+    return await ctx.db.insert("githubInstallations", {
+      installationId: 424242,
+      accountId: 1234567,
+      accountLogin: "BedrockNexus",
+      accountType: "Organization",
+      ownerType: "user",
+      ownerId: authUserId,
+      connectedBy: authUserId,
+      status: "active",
       createdAt: now,
       updatedAt: now,
     });
   });
-  return { userId, tokenIdentifier, client: t.withIdentity({ tokenIdentifier }) };
 }
 
 beforeEach(() => {
@@ -80,7 +132,7 @@ describe("GitHub webhook signatures", () => {
   });
 
   it("rejects forged deliveries before claiming an ID", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTest();
     const response = await signedWebhookRequest(t, {
       deliveryId: "forged-delivery",
       event: "push",
@@ -102,7 +154,8 @@ describe("GitHub webhook signatures", () => {
 
 describe("GitHub webhook delivery processing", () => {
   it("claims a fixture delivery, rejects its private repository, and detects duplicates", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTest();
+    await insertClaimedFixtureInstallation(t, "auth-webhook-fixture");
     const firstResponse = await signedWebhookRequest(t, {
       deliveryId: "fixture-installation-repositories",
       event: "installation_repositories",
@@ -137,7 +190,13 @@ describe("GitHub webhook delivery processing", () => {
     expect(stored.delivery).toMatchObject({
       status: "processed",
       attemptCount: 1,
+      receivedAt: expect.any(Number),
+      completedAt: expect.any(Number),
     });
+    expect(stored.delivery).not.toHaveProperty("claimedAt");
+    expect(stored.delivery).not.toHaveProperty("processedAt");
+    expect(stored.delivery).not.toHaveProperty("createdAt");
+    expect(stored.delivery).not.toHaveProperty("updatedAt");
     expect(stored.publicRepository).toMatchObject({
       isPrivate: false,
       accessStatus: "granted",
@@ -173,21 +232,29 @@ describe("GitHub webhook delivery processing", () => {
   });
 
   it("allows a failed delivery ID to be claimed for a safe retry", async () => {
-    const t = convexTest(schema, modules);
-    const firstClaim = await t.mutation(internal.github.webhooks.claimDelivery, {
+    const t = createTest();
+    const firstClaim = await t.mutation(internal.functions.github.webhooks.claimDelivery, {
       deliveryId: "retry-delivery",
       event: "release",
       action: "published",
       payloadDigest: "digest",
       receivedAt: Date.now(),
     });
-    await t.mutation(internal.github.webhooks.failDelivery, {
+    await t.mutation(internal.functions.github.webhooks.failDelivery, {
       webhookDeliveryId: firstClaim.webhookDeliveryId,
       attemptNumber: firstClaim.attemptNumber,
       error: "Temporary correlation failure",
     });
+    const failedDelivery = await t.run(async (ctx) =>
+      ctx.db.get("webhookDeliveries", firstClaim.webhookDeliveryId),
+    );
+    expect(failedDelivery).toMatchObject({
+      status: "failed",
+      lastError: "Temporary correlation failure",
+      completedAt: expect.any(Number),
+    });
 
-    const retryClaim = await t.mutation(internal.github.webhooks.claimDelivery, {
+    const retryClaim = await t.mutation(internal.functions.github.webhooks.claimDelivery, {
       deliveryId: "retry-delivery",
       event: "release",
       action: "published",
@@ -199,10 +266,16 @@ describe("GitHub webhook delivery processing", () => {
       attemptNumber: 2,
       shouldProcess: true,
     });
+    const processingDelivery = await t.run(async (ctx) =>
+      ctx.db.get("webhookDeliveries", firstClaim.webhookDeliveryId),
+    );
+    expect(processingDelivery).toMatchObject({ status: "processing", attemptCount: 2 });
+    expect(processingDelivery).not.toHaveProperty("lastError");
+    expect(processingDelivery).not.toHaveProperty("completedAt");
   });
 
   it("rejects a delivery ID reused with a different signed payload", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTest();
     const firstResponse = await signedWebhookRequest(t, {
       deliveryId: "payload-conflict",
       event: "push",
@@ -227,7 +300,7 @@ describe("GitHub webhook delivery processing", () => {
   });
 
   it("records signed unsupported events as ignored", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTest();
     const response = await signedWebhookRequest(t, {
       deliveryId: "unsupported-delivery",
       event: "issues",
@@ -238,55 +311,65 @@ describe("GitHub webhook delivery processing", () => {
     await expect(response.json()).resolves.toMatchObject({
       status: "ignored",
     });
+    const ignoredDelivery = await t.run(async (ctx) =>
+      ctx.db
+        .query("webhookDeliveries")
+        .withIndex("by_delivery_id", (query) => query.eq("deliveryId", "unsupported-delivery"))
+        .unique(),
+    );
+    expect(ignoredDelivery).toMatchObject({
+      status: "ignored",
+      completedAt: expect.any(Number),
+    });
   });
 });
 
 describe("GitHub installation ownership", () => {
   it("binds install state to the signed-in user", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTest();
     const owner = await insertUser(t, "owner");
     const outsider = await insertUser(t, "outsider");
     const stateHash = "secure-state-hash";
-    await t.mutation(internal.github.installations.createInstallIntent, {
+    await t.mutation(internal.functions.github.installations.createInstallIntent, {
       tokenIdentifier: owner.tokenIdentifier,
       stateHash,
       expiresAt: Date.now() + 60_000,
     });
 
     await expect(
-      t.query(internal.github.installations.validateInstallIntent, {
+      t.query(internal.functions.github.installations.validateInstallIntent, {
         tokenIdentifier: outsider.tokenIdentifier,
         stateHash,
         now: Date.now(),
       }),
     ).rejects.toThrow("invalid or expired");
     await expect(
-      t.query(internal.github.installations.validateInstallIntent, {
+      t.query(internal.functions.github.installations.validateInstallIntent, {
         tokenIdentifier: owner.tokenIdentifier,
         stateHash,
         now: Date.now(),
       }),
-    ).resolves.toMatchObject({ userId: owner.userId, status: "pending" });
+    ).resolves.toMatchObject({ createdBy: owner.authUserId, status: "pending" });
   });
 
   it("allows an installation state to begin only once", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTest();
     const owner = await insertUser(t, "single-use-owner");
     const stateHash = "single-use-state-hash";
-    await t.mutation(internal.github.installations.createInstallIntent, {
+    await t.mutation(internal.functions.github.installations.createInstallIntent, {
       tokenIdentifier: owner.tokenIdentifier,
       stateHash,
       expiresAt: Date.now() + 60_000,
     });
 
     await expect(
-      t.mutation(internal.github.installations.beginInstallIntent, {
+      t.mutation(internal.functions.github.installations.beginInstallIntent, {
         tokenIdentifier: owner.tokenIdentifier,
         stateHash,
       }),
     ).resolves.toMatchObject({ intentId: expect.any(String) });
     await expect(
-      t.mutation(internal.github.installations.beginInstallIntent, {
+      t.mutation(internal.functions.github.installations.beginInstallIntent, {
         tokenIdentifier: owner.tokenIdentifier,
         stateHash,
       }),
@@ -294,28 +377,16 @@ describe("GitHub installation ownership", () => {
   });
 
   it("never lists private repositories to the connected developer", async () => {
-    const t = convexTest(schema, modules);
+    const t = createTest();
     const owner = await insertUser(t, "repository-owner");
+    await insertClaimedFixtureInstallation(t, owner.authUserId);
     await signedWebhookRequest(t, {
       deliveryId: "visibility-delivery",
       event: "installation_repositories",
       payload: installationRepositoriesFixture,
     });
 
-    await t.run(async (ctx) => {
-      const installation = await ctx.db
-        .query("githubInstallations")
-        .withIndex("by_installation_id", (query) => query.eq("installationId", 424242))
-        .unique();
-      if (!installation) {
-        throw new Error("Fixture installation was not created.");
-      }
-      await ctx.db.patch("githubInstallations", installation._id, {
-        ownerUserId: owner.userId,
-      });
-    });
-
-    const installations = await owner.client.query(api.github.installations.listMine, {});
+    const installations = await owner.client.query(api.functions.github.installations.listMine, {});
     expect(installations).toHaveLength(1);
     expect(installations[0]?.repositories.map((repository) => repository.fullName)).toEqual([
       "BedrockNexus/public-plugin",

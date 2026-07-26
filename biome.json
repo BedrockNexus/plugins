@@ -7,7 +7,14 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!**/.next", "!**/coverage", "!**/node_modules", "!convex/_generated"]
+    "includes": [
+      "**",
+      "!**/.next",
+      "!**/coverage",
+      "!**/node_modules",
+      "!convex/_generated",
+      "!convex/betterAuth/_generated"
+    ]
   },
   "formatter": {
     "enabled": true,

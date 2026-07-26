@@ -1,6 +1,11 @@
 "use client";
 
-import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  type MultiSessionAuthClient,
+  useAuth,
+  useSession,
+  useSetActiveSession,
+} from "@better-auth-ui/react";
 import {
   ArrowUpDownIcon,
   Login01Icon,
@@ -8,12 +13,7 @@ import {
   Settings01Icon,
   UserAdd01Icon,
 } from "@hugeicons/core-free-icons";
-import {
-  type MultiSessionAuthClient,
-  useAuth,
-  useSession,
-  useSetActiveSession,
-} from "@better-auth-ui/react";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 
 import { buttonVariants } from "@/components/ui/button";

@@ -1,8 +1,8 @@
 "use client";
 
-import { HugeiconsIcon } from "@hugeicons/react";
-import { ViewIcon, ViewOffIcon } from "@hugeicons/core-free-icons";
 import { useAuth, useResetPassword } from "@better-auth-ui/react";
+import { ViewIcon, ViewOffIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { type SyntheticEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 

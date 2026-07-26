@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
   if (!(await isAuthenticated())) {
     return NextResponse.redirect(
-      new URL("/auth/sign-in?redirectTo=/dashboard/repositories", request.url),
+      new URL("/auth/sign-in?redirectTo=/dashboard/projects/new", request.url),
     );
   }
 
@@ -24,25 +24,25 @@ export async function GET(request: Request) {
     installationId <= 0
   ) {
     return NextResponse.redirect(
-      new URL("/dashboard/repositories?github=invalid-callback", request.url),
+      new URL("/dashboard/projects?github=invalid-callback", request.url),
     );
   }
 
   try {
-    await fetchAuthMutation(api.users.syncCurrentUser, {});
-    const result = await fetchAuthAction(api.github.actions.completeInstallation, {
+    await fetchAuthMutation(api.functions.site.users.syncCurrentUser, {});
+    const result = await fetchAuthAction(api.functions.github.actions.completeInstallation, {
       code,
       state,
       installationId,
     });
-    const destination = new URL("/dashboard/repositories", request.url);
+    const destination = new URL("/dashboard/projects", request.url);
     destination.searchParams.set("github", "connected");
     destination.searchParams.set("account", result.accountLogin);
     return NextResponse.redirect(destination);
   } catch (error) {
     console.error("GitHub App installation callback failed.", error);
     return NextResponse.redirect(
-      new URL("/dashboard/repositories?github=connection-failed", request.url),
+      new URL("/dashboard/projects?github=connection-failed", request.url),
     );
   }
 }

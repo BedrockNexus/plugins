@@ -1,5 +1,5 @@
-import { HugeiconsIcon } from "@hugeicons/react";
 import { CompassIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";

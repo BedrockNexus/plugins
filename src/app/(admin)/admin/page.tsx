@@ -1,8 +1,16 @@
-import { Alert01Icon, Clock01Icon, Shield01Icon, WebhookIcon } from "@hugeicons/core-free-icons";
+import {
+  Alert01Icon,
+  Clock01Icon,
+  Package01Icon,
+  Shield01Icon,
+  WebhookIcon,
+  WorkflowSquare01Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 
+import { api } from "@/../convex/_generated/api";
 import { PageShell } from "@/components/page-shell";
 import {
   MetricCard,
@@ -12,8 +20,21 @@ import {
 } from "@/components/prototype-ui";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { fetchAuthQuery } from "@/lib/auth-server";
 
 const adminAreas = [
+  {
+    href: "/admin/workflows",
+    icon: WorkflowSquare01Icon,
+    title: "Workflow templates",
+    description: "Maintain validated publishing workflows for every supported build system.",
+  },
+  {
+    href: "/admin/reviews",
+    icon: Package01Icon,
+    title: "Publishing reviews",
+    description: "Approve, request changes, or reject verified release submissions.",
+  },
   {
     href: "/admin/reports",
     icon: Alert01Icon,
@@ -39,7 +60,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  const publishingReviews = await fetchAuthQuery(
+    api.functions.projects.publishing.model.listReviewQueue,
+    {},
+  );
   return (
     <PageShell
       eyebrow="Phase 8 operations prototype"
@@ -48,18 +73,22 @@ export default function AdminPage() {
       actions={<Badge variant="accent">Server-authorized admin</Badge>}
     >
       <PrototypeBanner>
-        Queues and operational records are representative. This route remains protected by the
-        existing backend admin-role query.
+        Publishing reviews are live. Report and operational summary values remain representative
+        while the remaining Phase 8 functions are built.
       </PrototypeBanner>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <MetricCard label="Pending review" value="4" detail="Representative queue depth" />
+        <MetricCard
+          label="Pending review"
+          value={publishingReviews.length.toString()}
+          detail="Verified releases awaiting a decision"
+        />
         <MetricCard label="Open reports" value="2" detail="One high priority" />
         <MetricCard label="Failed deliveries" value="3" detail="Retry state preview" />
       </div>
 
       <PrototypeSection title="Operational surfaces">
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
           {adminAreas.map((area) => (
             <PrototypeFeatureCard
               description={area.description}
@@ -69,7 +98,11 @@ export default function AdminPage() {
               footer={
                 <Link href={area.href as Route}>
                   <Button className="w-full justify-between" variant="outline">
-                    Open prototype
+                    {area.href === "/admin/reviews"
+                      ? "Open queue"
+                      : area.href === "/admin/workflows"
+                        ? "Open editor"
+                        : "Open prototype"}
                     <HugeiconsIcon className="size-4" icon={Shield01Icon} />
                   </Button>
                 </Link>

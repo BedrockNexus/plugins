@@ -1,6 +1,6 @@
 "use client";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { Alert01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";

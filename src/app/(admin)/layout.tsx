@@ -1,9 +1,8 @@
-import type { ReactNode } from "react";
 import type { Route } from "next";
 import { redirect } from "next/navigation";
-
-import { WorkspaceShell } from "@/components/workspace-shell";
+import type { ReactNode } from "react";
 import { api } from "@/../convex/_generated/api";
+import { WorkspaceShell } from "@/components/workspace-shell";
 import { fetchAuthMutation, fetchAuthQuery, isAuthenticated } from "@/lib/auth-server";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
@@ -11,12 +10,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     redirect("/auth/sign-in?redirectTo=/admin" as Route);
   }
 
-  await fetchAuthMutation(api.users.syncCurrentUser, {});
+  await fetchAuthMutation(api.functions.site.users.syncCurrentUser, {});
 
   let authorized = false;
 
   try {
-    await fetchAuthQuery(api.admin.getAccess, {});
+    await fetchAuthQuery(api.functions.site.admin.getAccess, {});
     authorized = true;
   } catch {
     authorized = false;

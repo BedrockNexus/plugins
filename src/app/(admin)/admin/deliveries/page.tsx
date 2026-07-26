@@ -19,7 +19,6 @@ export const metadata: Metadata = {
 };
 
 const statusIcons = {
-  received: Clock01Icon,
   processing: Clock01Icon,
   processed: CheckmarkCircle02Icon,
   failed: CancelCircleIcon,
@@ -27,7 +26,7 @@ const statusIcons = {
 } as const;
 
 export default async function DeliveriesPage() {
-  const deliveries = await fetchAuthQuery(api.github.webhooks.listRecent, {});
+  const deliveries = await fetchAuthQuery(api.functions.github.webhooks.listRecent, {});
 
   return (
     <PageShell

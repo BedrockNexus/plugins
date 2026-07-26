@@ -1,11 +1,12 @@
 import { ConvexError } from "convex/values";
 import { customCtx, customMutation, customQuery } from "convex-helpers/server/customFunctions";
 
-import type { Doc } from "../_generated/dataModel";
-import { mutation, query, type MutationCtx, type QueryCtx } from "../_generated/server";
+import { type MutationCtx, mutation, type QueryCtx, query } from "../_generated/server";
+import { authComponent } from "../auth";
 
-export type AppRole = Doc<"users">["role"];
-export type AppUser = Doc<"users">;
+export type AppRole = "developer" | "verifiedCreator" | "moderator" | "admin";
+type BetterAuthUser = Awaited<ReturnType<typeof authComponent.getAuthUser>>;
+export type AppUser = Omit<BetterAuthUser, "role"> & { role: AppRole };
 type AuthCtx = QueryCtx | MutationCtx;
 
 const roleRank: Record<AppRole, number> = {
@@ -14,6 +15,25 @@ const roleRank: Record<AppRole, number> = {
   moderator: 2,
   admin: 3,
 };
+
+export function normalizeAppRole(role: string | null | undefined): AppRole {
+  if (
+    role === "developer" ||
+    role === "verifiedCreator" ||
+    role === "moderator" ||
+    role === "admin"
+  ) {
+    return role;
+  }
+  return "developer";
+}
+
+export function normalizeAppUser(user: BetterAuthUser): AppUser {
+  return {
+    ...user,
+    role: normalizeAppRole(user.role),
+  };
+}
 
 export function hasMinimumRole(role: AppRole, minimumRole: AppRole) {
   return roleRank[role] >= roleRank[minimumRole];
@@ -26,50 +46,36 @@ export function assertMinimumRole(user: AppUser, minimumRole: AppRole) {
       message: `${minimumRole} access is required.`,
     });
   }
-
   return user;
 }
 
 export async function getCurrentUserOrNull(ctx: AuthCtx) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
-    return null;
-  }
-
-  return await ctx.db
-    .query("users")
-    .withIndex("by_auth_token_identifier", (query) =>
-      query.eq("authTokenIdentifier", identity.tokenIdentifier),
-    )
-    .unique();
+  const user = await authComponent.safeGetAuthUser(ctx);
+  return user ? normalizeAppUser(user) : null;
 }
 
 export async function requireCurrentUser(ctx: AuthCtx) {
-  const identity = await ctx.auth.getUserIdentity();
-
-  if (!identity) {
+  const user = await getCurrentUserOrNull(ctx);
+  if (!user) {
     throw new ConvexError({
       code: "UNAUTHENTICATED",
       message: "Sign in is required.",
     });
   }
+  return user;
+}
 
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_auth_token_identifier", (query) =>
-      query.eq("authTokenIdentifier", identity.tokenIdentifier),
-    )
-    .unique();
-
+export async function getUserByTokenIdentifier(ctx: AuthCtx, tokenIdentifier: string) {
+  const separator = tokenIdentifier.lastIndexOf("|");
+  const authUserId = separator >= 0 ? tokenIdentifier.slice(separator + 1) : "";
+  const user = authUserId ? await authComponent.getAnyUserById(ctx, authUserId) : null;
   if (!user) {
     throw new ConvexError({
-      code: "USER_NOT_SYNCED",
-      message: "The signed-in user has not been synchronized yet.",
+      code: "UNAUTHENTICATED",
+      message: "The authenticated Better Auth user could not be resolved.",
     });
   }
-
-  return user;
+  return normalizeAppUser(user);
 }
 
 export async function requireModerator(ctx: AuthCtx) {

@@ -5,7 +5,6 @@ export const prototypeProject = {
     "A focused collection of moderation and quality-of-life tools for PowerNukkitX communities.",
   creator: "jeantkg",
   software: "PowerNukkitX",
-  language: "Java",
   license: "MIT",
   repository: "BedrockNexus/nexus-essentials",
   version: "1.4.0",
@@ -52,8 +51,8 @@ export const publishingTimeline = [
     status: "current",
   },
   {
-    title: "Workflow pull request",
-    description: "Preview and open a pull request containing the generated publishing workflow.",
+    title: "Managed publishing workflow",
+    description: "Install the validated publishing workflow directly on the default branch.",
     status: "pending",
   },
   {

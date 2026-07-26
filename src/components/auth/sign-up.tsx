@@ -1,9 +1,9 @@
 "use client";
 
-import { HugeiconsIcon } from "@hugeicons/react";
-import { ViewIcon, ViewOffIcon } from "@hugeicons/core-free-icons";
 import { authMutationKeys, parseAdditionalFieldValue } from "@better-auth-ui/core";
 import { useAuth, useFetchOptions, useSignUpEmail } from "@better-auth-ui/react";
+import { ViewIcon, ViewOffIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useIsMutating } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { toast } from "sonner";

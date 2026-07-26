@@ -1,7 +1,5 @@
 "use client";
 
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Link02Icon, Plug01Icon, Unlink01Icon } from "@hugeicons/core-free-icons";
 import { getProviderName } from "@better-auth-ui/core";
 import {
   providerIcons,
@@ -10,6 +8,8 @@ import {
   useLinkSocial,
   useUnlinkAccount,
 } from "@better-auth-ui/react";
+import { Link02Icon, Plug01Icon, Unlink01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { Account, SocialProvider } from "better-auth";
 import { toast } from "sonner";
 

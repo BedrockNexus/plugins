@@ -29,7 +29,6 @@ export const softwareCatalog = [
   {
     name: "PocketMine-MP",
     slug: "pocketmine-mp",
-    language: "PHP",
     format: ".phar",
     tone: "emerald",
     status: "MVP adapter",
@@ -37,7 +36,6 @@ export const softwareCatalog = [
   {
     name: "PowerNukkitX",
     slug: "powernukkitx",
-    language: "Java / Kotlin",
     format: ".jar",
     tone: "sky",
     status: "MVP adapter",

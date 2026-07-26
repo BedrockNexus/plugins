@@ -1,14 +1,15 @@
+import { Search01Icon, SearchMinusIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { FilterIcon, Search01Icon, SearchMinusIcon } from "@hugeicons/core-free-icons";
+import { fetchQuery } from "convex/nextjs";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
-
 import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
+import { ProjectCard } from "@/components/registry/project-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { prototypeProject } from "@/lib/prototype-data";
+import { api } from "../../../../convex/_generated/api";
 
 export const metadata: Metadata = {
   title: "Explore",
@@ -16,18 +17,64 @@ export const metadata: Metadata = {
   alternates: { canonical: "/explore" },
 };
 
-export default function ExplorePage() {
+type ExploreSearchParams = Promise<Record<string, string | string[] | undefined>>;
+type RegistrySort = "relevance" | "latest" | "downloads" | "rating";
+
+function first(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function ExplorePage({ searchParams }: { searchParams: ExploreSearchParams }) {
+  const params = await searchParams;
+  const search = first(params.q)?.trim().slice(0, 100) || undefined;
+  const requestedSoftware = first(params.software);
+  const requestedSort = first(params.sort);
+  const cursor = first(params.cursor) || null;
+  const software = await fetchQuery(api.functions.site.catalog.listSoftware, {});
+  const softwareSlug = software.some((item) => item.slug === requestedSoftware)
+    ? requestedSoftware
+    : undefined;
+  const sort: RegistrySort = search
+    ? "relevance"
+    : ["latest", "downloads", "rating"].includes(requestedSort ?? "")
+      ? (requestedSort as RegistrySort)
+      : "latest";
+
+  const queryArgs = {
+    paginationOpts: { numItems: 12, cursor },
+    search,
+    softwareSlug,
+    sort,
+  };
+  const result = await fetchQuery(api.functions.site.catalog.explore, queryArgs).catch(
+    (error: unknown) => {
+      if (!cursor) {
+        throw error;
+      }
+      return fetchQuery(api.functions.site.catalog.explore, {
+        ...queryArgs,
+        paginationOpts: { ...queryArgs.paginationOpts, cursor: null },
+      });
+    },
+  );
+
+  const nextParams = new URLSearchParams();
+  if (search) nextParams.set("q", search);
+  if (softwareSlug) nextParams.set("software", softwareSlug);
+  nextParams.set("sort", sort);
+  if (!result.isDone) nextParams.set("cursor", result.continueCursor);
+
   return (
     <PageShell
       eyebrow="Public registry"
       title="Explore Bedrock projects"
-      description="Search and filter plugins, extensions, libraries, and tools across every supported server software."
+      description="Search, filter, and sort published plugins across supported server software."
     >
       <Card className="mb-8 shadow-none">
-        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-end">
-          <search className="min-w-0 flex-1">
-            <form className="flex flex-col gap-3 sm:flex-row">
-              <label className="relative min-w-0 flex-1" htmlFor="registry-search">
+        <CardContent>
+          <search>
+            <form className="grid gap-3 lg:grid-cols-[1fr_13rem_11rem_auto]">
+              <label className="relative min-w-0" htmlFor="registry-search">
                 <HugeiconsIcon
                   icon={Search01Icon}
                   className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -36,31 +83,74 @@ export default function ExplorePage() {
                 <span className="sr-only">Search the registry</span>
                 <Input
                   className="pl-9"
+                  defaultValue={search}
                   id="registry-search"
                   name="q"
                   type="search"
-                  placeholder="Search plugins, creators, or software"
+                  placeholder="Search projects"
                 />
               </label>
-              <Button type="submit">Search registry</Button>
+              <label>
+                <span className="sr-only">Server software</span>
+                <select
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  defaultValue={softwareSlug ?? ""}
+                  name="software"
+                >
+                  <option value="">All software</option>
+                  {software.map((item) => (
+                    <option key={item.slug} value={item.slug}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span className="sr-only">Sort projects</span>
+                <select
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  defaultValue={sort}
+                  name="sort"
+                >
+                  <option value="relevance">Relevance</option>
+                  <option value="latest">Latest</option>
+                  <option value="downloads">Downloads</option>
+                  <option value="rating">Rating</option>
+                </select>
+              </label>
+              <Button type="submit">Apply</Button>
             </form>
           </search>
-          <Button className="gap-2" disabled variant="outline">
-            <HugeiconsIcon icon={FilterIcon} className="size-4" aria-hidden="true" />
-            Filters coming soon
-          </Button>
         </CardContent>
       </Card>
-      <EmptyState
-        icon={SearchMinusIcon}
-        title="The registry is ready for data"
-        description="Project search and filtering connect to Convex in Phase 7. Until trusted records exist, the registry deliberately avoids showing simulated projects."
-        action={
-          <Link href={`/projects/${prototypeProject.slug}` as Route}>
-            <Button variant="outline">View representative project design</Button>
-          </Link>
-        }
-      />
+
+      {result.page.length > 0 ? (
+        <>
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {result.page.map((project) => (
+              <ProjectCard key={project.projectId} project={project} />
+            ))}
+          </div>
+          {!result.isDone && (
+            <div className="mt-8 flex justify-center">
+              <Link href={`/explore?${nextParams.toString()}` as Route}>
+                <Button variant="outline">Next page</Button>
+              </Link>
+            </div>
+          )}
+        </>
+      ) : (
+        <EmptyState
+          icon={SearchMinusIcon}
+          title="No projects matched"
+          description="Try a broader search or a different server software filter. Newly published projects appear here automatically."
+          action={
+            <Link href="/explore">
+              <Button variant="outline">Clear filters</Button>
+            </Link>
+          }
+        />
+      )}
     </PageShell>
   );
 }

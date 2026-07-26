@@ -24,10 +24,7 @@ an earlier phase has unresolved acceptance criteria.
 - [x] Use GitHub Actions for builds and GitHub Releases for permanent assets.
   Never execute repository code on the BedrockNexus Plugins server.
 - [x] Use OpenPanel for product analytics while Convex remains authoritative for
-  downloads, builds, releases, subscriptions, permissions, and moderation.
-- [x] Defer billing until the core publishing loop works. Prefer Polar for the
-  single Pro subscription because it has official Next.js and Better Auth
-  integrations. Do not install billing packages during foundation work.
+  downloads, builds, releases, permissions, and moderation.
 - [x] Deploy the Next.js application on Vercel for the MVP and Convex separately.
   Point `plugins.bedrocknexus.com` at the Vercel deployment after staging passes.
 - [x] Use GitHub-derived project imagery during the MVP. Do not add general file
@@ -103,8 +100,8 @@ Acceptance:
 - [x] Use Better Auth UI for sign-in, account, sessions, security, and linked
   accounts. Do not maintain duplicate custom auth screens.
 - [x] Add backend role helpers for developer, verified creator, moderator, admin.
-- [x] Add user and creator-profile synchronization without duplicating Better
-  Auth-owned session/account tables.
+- [x] Keep users and application roles in Better Auth while synchronizing only
+  the product-specific creator profile.
 - [x] Protect dashboard and admin data on the backend, not only in navigation.
 
 Acceptance:
@@ -146,9 +143,9 @@ Acceptance:
 - [x] Add shared, visibly labeled prototype states that cannot be mistaken for
   connected production records or actions.
 - [x] Design GitHub App installation, granted repository, adapter detection,
-  metadata review, workflow pull request, and publishing progress surfaces.
+  metadata review, direct workflow installation, and publishing progress surfaces.
 - [x] Design developer project management, analytics, organizations, and
-  Plugins Pro capability-boundary surfaces.
+  shared-workspace surfaces.
 - [x] Design public project, version history, build provenance, creator, and
   organization surfaces.
 - [x] Design moderation reports, webhook delivery observability, and immutable
@@ -166,17 +163,31 @@ Acceptance:
 
 ## Phase 3 — Core Convex domain model
 
-- [x] Design tables and indexes for users, creator profiles, organizations,
-  organization members, GitHub installations, repositories, server software,
+- [x] Design tables and indexes for creator profiles, organization profiles,
+  GitHub installations, repositories, server software,
   projects, versions, builds, releases, release assets, downloads, categories,
-  tags, reviews, ratings, support links, subscriptions, moderation reports,
+  tags, reviews, ratings, support links, moderation reports,
   admin actions, and webhook deliveries.
 - [x] Keep Better Auth tables owned by its Convex component.
+- [x] Use Better Auth user IDs directly across the domain model; do not mirror
+  users in the application schema.
 - [x] Add canonical timestamps and normalized slugs.
 - [x] Add public-project search and filter indexes.
 - [x] Add backend authorization helpers shared by all domain functions.
 - [x] Seed PocketMine-MP and PowerNukkitX software records idempotently.
 - [x] Add tests for ownership, organization membership, roles, and visibility.
+- [x] Enforce exact polymorphic targets for support links and moderation
+  reports with discriminated schema unions.
+- [x] Normalize webhook delivery and attempt lifecycle timestamps and remove
+  unreachable or ambiguous status combinations.
+- [x] Move organization membership, roles, invitations, and active-workspace
+  selection to Better Auth's organization plugin, matching the Hub platform.
+- [x] Keep BedrockNexus organizations separate from GitHub accounts while
+  allowing an owner or admin to link a GitHub App installation explicitly.
+- [x] Carry organization ownership from the linked installation through
+  publishing drafts and published projects.
+- [x] Organize Convex like the Hub platform with composed schemas, feature
+  functions, and shared library modules.
 
 Acceptance:
 
@@ -194,7 +205,7 @@ Validation:
 
 - [x] Register the separate `BedrockNexus Plugins` GitHub App.
 - [x] Document and request only the permissions required for metadata, contents,
-  pull requests, workflows, actions, releases, and relevant statuses/checks.
+  workflows, actions, releases, and relevant statuses/checks.
 - [x] Subscribe only to installation, installation repositories, repository,
   push, workflow run, and release events.
 - [x] Add Octokit GitHub App authentication and installation-token helpers.
@@ -226,21 +237,21 @@ Implementation validation:
 
 ## Phase 5 — Adapter system
 
-- [ ] Define the generic adapter interface and domain types.
-- [ ] Build an explicit registry with `getAdapterById`, `getEnabledAdapters`, and
+- [x] Define the generic adapter interface and domain types.
+- [x] Build an explicit registry with `getAdapterById`, `getEnabledAdapters`, and
   `detectCompatibleAdapters`.
-- [ ] Define confidence thresholds and ambiguity behavior.
-- [ ] Implement the PMMP adapter in isolated detection, metadata, workflow, and
+- [x] Define confidence thresholds and ambiguity behavior.
+- [x] Implement the PMMP adapter in isolated detection, metadata, workflow, and
   validation modules.
-- [ ] Implement the PowerNukkitX adapter with isolated Gradle/Maven detection,
+- [x] Implement the PowerNukkitX adapter with isolated Gradle/Maven detection,
   metadata, workflow, and validation modules.
-- [ ] Support user-confirmed build command overrides with strict validation.
-- [ ] Store workflow templates as testable templates or generators.
-- [ ] Generate `.github/workflows/bedrocknexus-publish.yml`.
-- [ ] Ensure normal branch pushes validate/build without creating releases.
-- [ ] Ensure `v*` tag pushes create GitHub Releases with validated assets.
-- [ ] Exclude sources, Javadocs, tests, and unrelated JARs from primary output.
-- [ ] Add fixture repositories and snapshot tests for detection and workflows.
+- [x] Support user-confirmed build command overrides with strict validation.
+- [x] Store workflow templates as testable templates or generators.
+- [x] Generate `.github/workflows/bedrocknexus-publish.yml`.
+- [x] Ensure normal branch pushes validate/build without creating releases.
+- [x] Ensure `v*` tag pushes create GitHub Releases with validated assets.
+- [x] Exclude sources, Javadocs, tests, and unrelated JARs from primary output.
+- [x] Add fixture repositories and snapshot tests for detection and workflows.
 
 Acceptance:
 
@@ -248,45 +259,103 @@ Acceptance:
 - Unsupported and ambiguous repositories fail gracefully.
 - Adding a third adapter does not require changing the generic publishing flow.
 
+Implementation validation:
+
+- The adapter registry resolves PMMP, PowerNukkitX Gradle, and PowerNukkitX
+  Maven fixtures while returning explicit unsupported and ambiguous results.
+- Generated workflow snapshots keep validation jobs read-only and grant write
+  access only to the `v*` tag release job.
+- Format, lint, typecheck, all 34 tests, and the production build passed.
+
 ## Phase 6 — Publishing workflow
 
-- [ ] Build the install/select/detect/metadata/workflow/track/release wizard.
-- [ ] Prefill metadata from GitHub and sanitized README content.
-- [ ] Let users correct adapter and project-type detection.
-- [ ] Validate project metadata with shared Zod schemas.
-- [ ] Create a pull request for the generated workflow; never silently commit it.
-- [ ] Track the workflow PR, merge readiness, workflow runs, logs URL, commit,
-  tag, and conclusion.
-- [ ] Correlate a release, workflow run, tag, commit, and release assets.
-- [ ] Implement Verified Build as a strict backend-computed status.
-- [ ] Require a verified public repository, installed workflow, valid release
+- [x] Build the install/select/detect/metadata/workflow/track/release wizard.
+- [x] Prefill metadata from GitHub and sanitized README content.
+- [x] Detect licenses from repository metadata or manifests, keep the license
+  out of editable metadata, and omit redundant language metadata from the
+  application model.
+- [x] Keep adapter detection and the fixed plugin product type outside editable
+  project metadata.
+- [x] Validate project metadata with shared Zod schemas.
+- [x] Commit the validated managed workflow directly to the selected repository
+  only after the project owner explicitly chooses Install or Update.
+- [x] Track the workflow installation, workflow runs, logs URL, commit, tag, and
+  conclusion.
+- [x] Add an admin workflow-template editor for the PocketMine/Composer,
+  PowerNukkitX/Gradle, and PowerNukkitX/Maven variants.
+- [x] Correlate a release, workflow run, tag, commit, and release assets.
+- [x] Implement Verified Build as a strict backend-computed status.
+- [x] Require a verified public repository, installed workflow, valid release
   asset, and moderation readiness before publication.
+- [x] Consolidate repository connections, project metadata, detected releases,
+  and publishing actions into the `/dashboard/projects` workspace.
+- [x] Detect and persist multiple eligible GitHub releases so the publisher can
+  choose which verified, unpublished release to submit.
+- [x] Replace direct owner publication with a mandatory moderator review gate,
+  including approve, request-changes, reject, and immutable audit actions.
 
 Acceptance:
 
-- A developer can complete the full repository-to-public-project loop for one
-  PMMP fixture and one PowerNukkitX fixture.
+- A developer can complete the repository-to-review loop for one PMMP fixture
+  and one PowerNukkitX fixture, and only a moderator can complete publication.
 - A normal default-branch push never creates a public release.
+
+Implementation validation:
+
+- The publishing schema and functions were pushed to the standalone Convex
+  development deployment.
+- Shared Zod validation runs in the browser for immediate feedback and again in
+  the authenticated Convex mutation before project records are written.
+- Fixture-backed integration tests complete the owner-submit/moderator-approve
+  transition for PocketMine-MP and PowerNukkitX, cover release selection and
+  requested changes, and reject default-branch runs and mismatched commits.
+- Workflow-template tests cover all three variants, admin-only updates, audit
+  records, managed placeholders, least-privilege permissions, and unsafe
+  trigger/secret/runner rejection.
+- Format, lint, typecheck, all 57 tests, and the production build passed.
 
 ## Phase 7 — Public registry and downloads
 
-- [ ] Build home, Explore, software directory, software detail, project detail,
+- [x] Build home, Explore, software directory, software detail, project detail,
   version history, creator, and organization pages from Convex data.
-- [ ] Add Convex search, filters, sorting, pagination, and URL-backed filter state.
-- [ ] Sanitize README and changelog rendering.
-- [ ] Show source repository and build provenance prominently.
-- [ ] Implement `/download/[projectSlug]/[version]` as a redirect-only route.
-- [ ] Resolve the asset from trusted Convex records; never accept a destination
+- [x] Add Convex search, filters, sorting, pagination, and URL-backed filter state.
+- [x] Sanitize README and changelog rendering.
+- [x] Show source repository and build provenance prominently.
+- [x] Implement `/download/[projectSlug]/[version]` as a redirect-only route.
+- [x] Resolve the asset from trusted Convex records; never accept a destination
   URL from request input.
-- [ ] Validate the GitHub release asset host, record the download, apply basic
+- [x] Validate the GitHub release asset host, record the download, apply basic
   duplicate/rate protection, emit analytics, and redirect.
-- [ ] Clearly define downloads as redirects, not unique installations.
+- [x] Clearly define downloads as redirects, not unique installations.
+- [x] Maintain exact lifetime download totals for each project owner without
+  truncating organization project lists.
 
 Acceptance:
 
 - Plugin bytes never pass through the application server or Convex.
 - Open redirects and arbitrary asset URLs are impossible.
 - Public counts come from Convex and are updated consistently.
+
+Implementation validation:
+
+- The catalog schema, indexed queries, download mutation, and official Convex
+  rate-limiter component were pushed to the standalone development deployment.
+- Download totals use the official sharded-counter component for exact,
+  contention-safe reads. Indexed popularity ordering is refreshed at most once
+  per minute per active project without changing the project's content
+  `updatedAt`.
+- Software and organization project totals use the official aggregate
+  component, so displayed counts remain exact beyond the bounded project lists
+  used to render page content.
+- Live smoke queries returned both supported software records, with the empty
+  public-project state represented honestly.
+- Browser checks passed for the live home, URL-backed Explore filters, and the
+  PocketMine-MP software page; port 3000 was cleared afterward.
+- Format, lint, typecheck, all 47 tests, and the production build passed.
+- [ ] Deployment QA: configure the same high-entropy
+  `DOWNLOAD_REDIRECT_SECRET` in Next.js and Convex, publish a verified fixture
+  release, and confirm one real browser download redirect increments the count
+  exactly once.
 
 ## Phase 8 — Analytics and moderation
 
@@ -297,31 +366,15 @@ Acceptance:
 - [ ] Do not duplicate OpenPanel event streams into Convex.
 - [ ] Build reports, pending review, hidden/suspended projects, failed builds,
   failed webhook deliveries, suspicious downloads, and moderation history.
-- [ ] Add immutable admin-action audit records.
+- [x] Build the live pending publishing-review queue with exact release details
+  and server-authorized approval decisions.
+- [x] Add immutable admin-action audit records for publishing review decisions.
 - [ ] Never describe Verified Build as a security or safety review.
 
 Acceptance:
 
 - Funnel events appear in OpenPanel without exposing secrets or private data.
 - Moderator/admin actions are enforced server-side and auditable.
-
-## Phase 9 — BedrockNexus Plugins Pro
-
-- [ ] Confirm Polar as the billing provider before installing billing packages.
-- [ ] Create exactly one paid product: BedrockNexus Plugins Pro.
-- [ ] Integrate checkout, customer portal, subscription webhooks, and backend
-  entitlement checks.
-- [ ] Store authoritative application entitlement state in Convex.
-- [ ] Gate only advanced analytics, profile customization, organizations/teams,
-  API access, early access, and priority support.
-- [ ] Keep publishing, GitHub workflows, public pages, basic totals, reviews,
-  ratings, and support links free.
-- [ ] Do not sell ranking or featured placement.
-
-Acceptance:
-
-- Subscription events are verified and idempotent.
-- Cancelled/expired subscriptions lose Pro access without losing projects.
 
 ## Phase 10 — Production readiness
 
@@ -346,6 +399,6 @@ Acceptance:
 - [x] No self-hosted build workers or execution of plugin code on app servers.
 - [x] No permanent GitHub Actions artifact download URLs.
 - [x] No Cloudflare R2, D1, or Meilisearch.
-- [x] No creator payouts, paid ranking, featured placement sales, or multiple
+- [x] No creator payouts, paid ranking, featured placement sales, or paid
   subscription tiers.
 - [x] No adapters beyond PMMP and PowerNukkitX until the MVP loop is complete.

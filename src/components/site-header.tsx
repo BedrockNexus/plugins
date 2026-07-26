@@ -7,8 +7,8 @@ import { usePathname } from "next/navigation";
 
 import { UserButton } from "@/components/auth/user/user-button";
 import { BrandMark } from "@/components/brand-mark";
-import { cn } from "@/lib/utils";
 import { publicNavigation } from "@/lib/site";
+import { cn } from "@/lib/utils";
 
 const mobileNavigation = [
   { href: "/", label: "Home", icon: Home01Icon },

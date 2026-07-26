@@ -1,13 +1,13 @@
 "use client";
 
-import { HugeiconsIcon } from "@hugeicons/react";
+import { useAuth, useRevokeSession, useSession } from "@better-auth-ui/react";
 import {
   Cancel01Icon,
   ComputerIcon,
   Logout01Icon,
   SmartPhone01Icon,
 } from "@hugeicons/core-free-icons";
-import { useAuth, useRevokeSession, useSession } from "@better-auth-ui/react";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { Session } from "better-auth";
 import Bowser from "bowser";
 import { toast } from "sonner";

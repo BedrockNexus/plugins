@@ -1,4 +1,3 @@
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowRight01Icon,
   CheckmarkBadge01Icon,
@@ -9,16 +8,20 @@ import {
   GitPullRequestIcon,
   Package01Icon,
   Search01Icon,
+  SearchMinusIcon,
   Shield01Icon,
   WorkflowCircle01Icon,
 } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { fetchQuery } from "convex/nextjs";
 import Link from "next/link";
-
+import { EmptyState } from "@/components/empty-state";
+import { ProjectCard } from "@/components/registry/project-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { softwareCatalog } from "@/lib/site";
+import { api } from "../../../convex/_generated/api";
 
 const provenanceRows = [
   { icon: GitBranchIcon, label: "Source", value: "public repository" },
@@ -36,12 +39,12 @@ const publishingSteps = [
   {
     icon: CodeIcon,
     title: "Detect and configure",
-    description: "An adapter identifies the software, build tool, language, and expected output.",
+    description: "An adapter identifies the server software, build tool, and expected output.",
   },
   {
     icon: GitPullRequestIcon,
     title: "Publish through GitHub",
-    description: "Review the generated workflow pull request and release from version tags.",
+    description: "Install the managed workflow and publish verified builds from version tags.",
   },
 ] as const;
 
@@ -63,7 +66,12 @@ const trustSignals = [
   },
 ] as const;
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [featuredProjects, softwareCatalog] = await Promise.all([
+    fetchQuery(api.functions.site.catalog.featured, { limit: 6 }),
+    fetchQuery(api.functions.site.catalog.listSoftware, {}),
+  ]);
+
   return (
     <main className="flex-1">
       <section className="relative isolate overflow-hidden border-b">
@@ -157,6 +165,44 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="border-b py-16 sm:py-24">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="mb-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl">
+              <p className="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em]">
+                <span className="size-2 bg-primary" />
+                Public registry
+              </p>
+              <h2 className="font-bold text-3xl tracking-tight md:text-5xl">
+                Discover published projects.
+              </h2>
+              <p className="mt-4 text-muted-foreground leading-7">
+                Ranked by recorded download redirects from trusted public releases.
+              </p>
+            </div>
+            <Link href="/explore">
+              <Button className="gap-2" variant="outline">
+                Explore all projects
+                <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" aria-hidden="true" />
+              </Button>
+            </Link>
+          </div>
+          {featuredProjects.length > 0 ? (
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {featuredProjects.map((project) => (
+                <ProjectCard key={project.projectId} project={project} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={SearchMinusIcon}
+              title="The public registry is ready"
+              description="The first verified public release will appear here automatically."
+            />
+          )}
+        </div>
+      </section>
+
       <section className="py-16 sm:py-24">
         <div className="container mx-auto px-4 md:px-6">
           <div className="mb-10 max-w-3xl">
@@ -204,7 +250,7 @@ export default function HomePage() {
                 Initial ecosystem
               </p>
               <h2 className="font-bold text-3xl tracking-tight md:text-5xl">
-                Two adapters. One extensible platform.
+                {softwareCatalog.length} live adapters. One extensible platform.
               </h2>
             </div>
             <Link href="/software">
@@ -222,17 +268,18 @@ export default function HomePage() {
                 href={`/software/${software.slug}`}
                 key={software.slug}
               >
-                <Card className="h-full transition-[transform,border-color] group-hover:-translate-y-1 group-hover:border-primary/60">
+                <Card className="h-full transition-[transform,border-color] group-hover:-translate-y-1 group-hover:border-primary">
                   <CardHeader className="grid-cols-[auto_1fr_auto] items-center gap-x-4">
                     <span className="row-span-2 grid size-12 place-items-center rounded-lg bg-primary text-primary-foreground">
                       <HugeiconsIcon icon={Package01Icon} className="size-5" aria-hidden="true" />
                     </span>
                     <CardTitle className="col-start-2 text-lg">{software.name}</CardTitle>
                     <CardDescription className="col-start-2">
-                      {software.language} · {software.format}
+                      {software.projectCount} public{" "}
+                      {software.projectCount === 1 ? "project" : "projects"}
                     </CardDescription>
                     <Badge className="col-start-3 row-start-1" variant="outline">
-                      {software.status}
+                      {software.adapterId}
                     </Badge>
                     <HugeiconsIcon
                       icon={ArrowRight01Icon}
