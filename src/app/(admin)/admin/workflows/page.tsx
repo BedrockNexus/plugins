@@ -13,7 +13,7 @@ export default function WorkflowTemplatesPage() {
     <DashboardPageShell
       eyebrow="Publishing infrastructure"
       title="Workflow templates"
-      description="Edit the validated GitHub Actions files installed into plugin repositories."
+      description="Add and manage the validated GitHub Actions workflows publishers can select."
     >
       <WorkflowTemplateEditor />
     </DashboardPageShell>

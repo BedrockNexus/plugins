@@ -14,6 +14,7 @@ import type { ComponentPropsWithoutRef, PropsWithChildren, ReactNode } from "rea
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { authClient } from "@/lib/auth-client";
+import { deleteUserPlugin } from "@/lib/delete-user-plugin";
 import { getQueryClient } from "@/lib/query-client";
 
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -63,6 +64,7 @@ export function Providers({
           authClient={authClient as unknown as AuthClient}
           emailAndPassword={{ enabled: false }}
           plugins={[
+            deleteUserPlugin(),
             organizationPlugin({
               slug: organizationSlug,
               viewPaths: {
@@ -75,7 +77,7 @@ export function Providers({
           ]}
           basePaths={{
             auth: "/auth",
-            settings: "/settings",
+            settings: "/dashboard/settings",
             organization: "/dashboard/organizations",
           }}
           multipleAccountsPerProvider={false}

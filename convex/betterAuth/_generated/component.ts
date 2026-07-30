@@ -37,6 +37,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                   createdAt: number;
                   email: string;
                   emailVerified: boolean;
+                  githubUsername?: null | string;
                   image?: null | string;
                   name: string;
                   role?: null | string;
@@ -153,6 +154,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                     | "banned"
                     | "banReason"
                     | "banExpires"
+                    | "githubUsername"
                     | "_id";
                   mode?: "sensitive" | "insensitive";
                   operator?:
@@ -443,6 +445,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                     | "banned"
                     | "banReason"
                     | "banExpires"
+                    | "githubUsername"
                     | "_id";
                   mode?: "sensitive" | "insensitive";
                   operator?:
@@ -805,6 +808,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                   createdAt?: number;
                   email?: string;
                   emailVerified?: boolean;
+                  githubUsername?: null | string;
                   image?: null | string;
                   name?: string;
                   role?: null | string;
@@ -825,6 +829,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                     | "banned"
                     | "banReason"
                     | "banExpires"
+                    | "githubUsername"
                     | "_id";
                   mode?: "sensitive" | "insensitive";
                   operator?:
@@ -1168,6 +1173,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                   createdAt?: number;
                   email?: string;
                   emailVerified?: boolean;
+                  githubUsername?: null | string;
                   image?: null | string;
                   name?: string;
                   role?: null | string;
@@ -1188,6 +1194,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                     | "banned"
                     | "banReason"
                     | "banExpires"
+                    | "githubUsername"
                     | "_id";
                   mode?: "sensitive" | "insensitive";
                   operator?:

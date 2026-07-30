@@ -99,6 +99,13 @@ Acceptance:
 - [x] Install Better Auth UI from its shadcn registry.
 - [x] Use Better Auth UI for sign-in, account, sessions, security, and linked
   accounts. Do not maintain duplicate custom auth screens.
+- [x] Match the Hub dashboard settings structure with separate Profile,
+  Account, Providers, and Sessions routes, including editable public creator
+  profile fields backed by the existing creator profile record and the Better
+  Auth UI shadcn account-deletion Danger Zone.
+- [x] Seed editable, unique creator usernames from GitHub login names, retain
+  GitHub attribution separately, and redirect previous creator handles through
+  transactional username aliases.
 - [x] Add backend role helpers for developer, verified creator, moderator, admin.
 - [x] Keep users and application roles in Better Auth while synchronizing only
   the product-specific creator profile.
@@ -247,6 +254,8 @@ Implementation validation:
   metadata, workflow, and validation modules.
 - [x] Support user-confirmed build command overrides with strict validation.
 - [x] Store workflow templates as testable templates or generators.
+- [x] Let administrators add validated workflow variants without changing the
+  publishing flow or redeploying the application.
 - [x] Generate `.github/workflows/bedrocknexus-publish.yml`.
 - [x] Ensure normal branch pushes validate/build without creating releases.
 - [x] Ensure `v*` tag pushes create GitHub Releases with validated assets.
@@ -276,13 +285,20 @@ Implementation validation:
   application model.
 - [x] Keep adapter detection and the fixed plugin product type outside editable
   project metadata.
+- [x] Keep workflow selection explicit: detect project compatibility and
+  metadata, then require the publisher to choose an available workflow.
 - [x] Validate project metadata with shared Zod schemas.
 - [x] Commit the validated managed workflow directly to the selected repository
   only after the project owner explicitly chooses Install or Update.
 - [x] Track the workflow installation, workflow runs, logs URL, commit, tag, and
   conclusion.
-- [x] Add an admin workflow-template editor for the PocketMine/Composer,
-  PowerNukkitX/Gradle, and PowerNukkitX/Maven variants.
+- [x] Add an admin workflow-template editor that can edit the built-in
+  PocketMine/Composer, PowerNukkitX/Gradle, and PowerNukkitX/Maven variants and
+  add custom validated workflows.
+- [x] Replace plain description inputs with a constrained Markdown authoring
+  editor that stores portable Markdown and preserves the 8,000-character limit.
+- [x] Replace plain workflow textareas with a themed YAML code editor that
+  provides syntax tooling and live BedrockNexus workflow-policy diagnostics.
 - [x] Correlate a release, workflow run, tag, commit, and release assets.
 - [x] Implement Verified Build as a strict backend-computed status.
 - [x] Require a verified public repository, installed workflow, valid release

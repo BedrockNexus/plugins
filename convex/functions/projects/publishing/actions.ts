@@ -12,11 +12,7 @@ import {
   type RepositoryFile,
   type RepositorySnapshot,
 } from "../../../../src/lib/adapters";
-import {
-  getDefaultWorkflowTemplate,
-  getWorkflowTemplateKey,
-  renderWorkflowTemplate,
-} from "../../../../src/lib/adapters/workflow-templates";
+import { renderWorkflowTemplate } from "../../../../src/lib/adapters/workflow-templates";
 import { sanitizeReadmeExcerpt, slugifyProjectName } from "../../../../src/lib/publishing/metadata";
 import { internal } from "../../../_generated/api";
 import type { Doc, Id } from "../../../_generated/dataModel";
@@ -296,17 +292,24 @@ export const installWorkflow = action({
       context.repository,
     );
     const analysis = analyzeSnapshot(snapshot, context.draft.adapterId);
-    const templateKey = getWorkflowTemplateKey(
-      context.draft.adapterId,
-      analysis.metadata.buildSystem,
-    );
-    const override: { content: string; version: number } | null = await ctx.runQuery(
-      internal.functions.admin.workflows.getOverride,
-      { key: templateKey },
-    );
-    const templateContent = override?.content ?? getDefaultWorkflowTemplate(templateKey);
-    const generated = renderWorkflowTemplate(templateContent, analysis.metadata.name);
-    const templateVersion = override?.version ?? 1;
+    const templateKey = context.draft.workflowTemplateKey;
+    if (!templateKey) {
+      throw new ConvexError({
+        code: "WORKFLOW_NOT_SELECTED",
+        message: "Choose a publishing workflow before installing it.",
+      });
+    }
+    const template = await ctx.runQuery(internal.functions.admin.workflows.getTemplate, {
+      key: templateKey,
+    });
+    if (!template || template.adapterId !== context.draft.adapterId) {
+      throw new ConvexError({
+        code: "WORKFLOW_TEMPLATE_UNAVAILABLE",
+        message: "The selected workflow is no longer available for this project.",
+      });
+    }
+    const generated = renderWorkflowTemplate(template.content, analysis.metadata.name);
+    const templateVersion = template.version;
 
     try {
       let existing:
@@ -347,6 +350,7 @@ export const installWorkflow = action({
           draftId: args.draftId,
           branch: context.repository.defaultBranch,
           commitSha,
+          templateKey,
           templateVersion,
         });
         return {
@@ -380,6 +384,7 @@ export const installWorkflow = action({
         draftId: args.draftId,
         branch: context.repository.defaultBranch,
         commitSha,
+        templateKey,
         templateVersion,
       });
       return {

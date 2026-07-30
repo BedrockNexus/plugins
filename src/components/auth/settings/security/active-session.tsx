@@ -16,8 +16,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 
-function timeAgo(date: Date) {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+function timeAgo(value: unknown) {
+  const date =
+    value instanceof Date
+      ? value
+      : new Date(typeof value === "string" || typeof value === "number" ? value : Number.NaN);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
   const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
 
   const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
@@ -63,6 +72,7 @@ export function ActiveSession({ activeSession }: ActiveSessionProps) {
   const isCurrentSession = activeSession.token === session?.session.token;
   const ua = Bowser.parse(activeSession.userAgent || "");
   const isMobile = ua.platform.type === "mobile" || ua.platform.type === "tablet";
+  const createdAt = timeAgo(activeSession.createdAt);
 
   return (
     <Card className="bg-transparent border-0 ring-0 shadow-none">
@@ -85,13 +95,9 @@ export function ActiveSession({ activeSession }: ActiveSessionProps) {
             <span className="w-fit rounded-full bg-primary px-2 py-0.5 font-medium text-primary-foreground text-xs">
               {localization.settings.currentSession}
             </span>
-          ) : (
-            activeSession.createdAt && (
-              <span className="text-xs text-muted-foreground capitalize">
-                {timeAgo(activeSession.createdAt)}
-              </span>
-            )
-          )}
+          ) : createdAt ? (
+            <span className="text-xs text-muted-foreground capitalize">{createdAt}</span>
+          ) : null}
         </div>
 
         <Button

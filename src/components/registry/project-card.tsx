@@ -25,12 +25,20 @@ export type PublicProjectCard = {
     verifiedBuild: boolean;
     publishedAt?: number;
   } | null;
-  creator: { slug: string; displayName: string; avatarUrl?: string } | null;
+  creator: {
+    slug: string;
+    username: string;
+    githubUsername?: string;
+    displayName: string;
+    avatarUrl?: string;
+  } | null;
   organization: { slug: string; name: string; avatarUrl?: string } | null;
 };
 
 export function ProjectCard({ project }: { project: PublicProjectCard }) {
-  const owner = project.organization?.name ?? project.creator?.displayName ?? "Independent creator";
+  const owner =
+    project.organization?.name ??
+    (project.creator ? `@${project.creator.username}` : "Independent creator");
   return (
     <Link className="group rounded-xl" href={`/projects/${project.slug}` as Route}>
       <Card className="h-full transition-[transform,border-color] group-hover:-translate-y-1 group-hover:border-primary">

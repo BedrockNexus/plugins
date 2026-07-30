@@ -20,8 +20,10 @@ export const tables = {
     banned: v.optional(v.union(v.null(), v.boolean())),
     banReason: v.optional(v.union(v.null(), v.string())),
     banExpires: v.optional(v.union(v.null(), v.number())),
+    githubUsername: v.optional(v.union(v.null(), v.string())),
   })
     .index("email_name", ["email", "name"])
+    .index("githubUsername", ["githubUsername"])
     .index("name", ["name"])
     .index("userId", ["userId"]),
   session: defineTable({
@@ -38,7 +40,9 @@ export const tables = {
     .index("expiresAt", ["expiresAt"])
     .index("expiresAt_userId", ["expiresAt", "userId"])
     .index("token", ["token"])
-    .index("userId", ["userId"]),
+    .index("userId", ["userId"])
+    // Better Auth's list-sessions query filters by userId before expiresAt.
+    .index("userId_expiresAt", ["userId", "expiresAt"]),
   account: defineTable({
     accountId: v.string(),
     providerId: v.string(),

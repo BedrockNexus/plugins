@@ -5,6 +5,7 @@ import {
   Analytics01Icon,
   ArrowDown01Icon,
   ArrowLeft01Icon,
+  ArrowRight01Icon,
   Building03Icon,
   Cancel01Icon,
   Clock01Icon,
@@ -42,6 +43,10 @@ type NavigationItem = {
   label: string;
   icon: IconSvgElement;
   exact?: boolean;
+  children?: Array<{
+    href: string;
+    label: string;
+  }>;
 };
 
 const dashboardNavigation: Array<{
@@ -69,7 +74,19 @@ const dashboardNavigation: Array<{
   },
   {
     label: "Settings",
-    items: [{ href: "/settings/account", label: "Account", icon: Settings01Icon }],
+    items: [
+      {
+        href: "/dashboard/settings",
+        label: "Settings",
+        icon: Settings01Icon,
+        children: [
+          { href: "/dashboard/settings/profile", label: "Profile" },
+          { href: "/dashboard/settings/account", label: "Account" },
+          { href: "/dashboard/settings/providers", label: "Providers" },
+          { href: "/dashboard/settings/sessions", label: "Sessions" },
+        ],
+      },
+    ],
   },
 ];
 
@@ -102,6 +119,8 @@ function DashboardNavigation({
   navigation: Array<{ label: string; items: NavigationItem[] }>;
   onNavigate?: () => void;
 }) {
+  const [settingsOpen, setSettingsOpen] = useState(true);
+
   return (
     <nav className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-3 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {navigation.map((group) => (
@@ -110,6 +129,63 @@ function DashboardNavigation({
           <div className="space-y-1">
             {group.items.map((item) => {
               const active = isActiveRoute(pathname, item);
+
+              if (item.children) {
+                return (
+                  <div key={item.href}>
+                    <button
+                      aria-expanded={settingsOpen}
+                      className={cn(
+                        "group flex h-10 w-full items-center gap-3 rounded-lg px-2.5 font-medium text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground",
+                        active && "bg-muted text-foreground",
+                      )}
+                      onClick={() => setSettingsOpen((open) => !open)}
+                      type="button"
+                    >
+                      <span
+                        className={cn(
+                          "grid size-7 shrink-0 place-items-center rounded-md transition-colors",
+                          active
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-background text-muted-foreground ring-1 ring-border group-hover:text-foreground",
+                        )}
+                      >
+                        <HugeiconsIcon className="size-4" icon={item.icon} />
+                      </span>
+                      <span>{item.label}</span>
+                      <HugeiconsIcon
+                        className={cn(
+                          "ml-auto size-4 transition-transform",
+                          settingsOpen && "rotate-90",
+                        )}
+                        icon={ArrowRight01Icon}
+                      />
+                    </button>
+                    {settingsOpen ? (
+                      <div className="mt-1 ml-[1.6rem] space-y-1 border-l pl-4">
+                        {item.children.map((child) => {
+                          const childActive = pathname === child.href;
+                          return (
+                            <Link
+                              aria-current={childActive ? "page" : undefined}
+                              className={cn(
+                                "flex h-8 items-center rounded-md px-2 text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground",
+                                childActive && "bg-muted font-medium text-foreground",
+                              )}
+                              href={child.href as Route}
+                              key={child.href}
+                              onClick={onNavigate}
+                            >
+                              {child.label}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   aria-current={active ? "page" : undefined}

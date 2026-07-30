@@ -87,7 +87,7 @@ const quickActions = [
   {
     label: "Account settings",
     description: "Manage your profile and security",
-    href: "/settings/account",
+    href: "/dashboard/settings/profile",
     icon: Settings01Icon,
   },
 ] as const;

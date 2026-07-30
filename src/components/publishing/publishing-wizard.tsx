@@ -18,12 +18,12 @@ import { toast } from "sonner";
 
 import { api } from "@/../convex/_generated/api";
 import type { Doc, Id } from "@/../convex/_generated/dataModel";
+import { MarkdownEditor } from "@/components/editors/markdown-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { type ProjectMetadataInput, projectMetadataSchema } from "@/lib/publishing/metadata";
 import { cn } from "@/lib/utils";
 
@@ -108,12 +108,13 @@ function MetadataForm({
         />
       </div>
       <div className="space-y-2 sm:col-span-2">
-        <Label htmlFor="project-description">Description</Label>
-        <Textarea
-          className="min-h-36"
-          id="project-description"
+        <Label id="project-description-label">Description</Label>
+        <MarkdownEditor
+          disabled={busy}
+          labelledBy="project-description-label"
+          maximumLength={8_000}
           value={metadata.description ?? ""}
-          onChange={(event) => update("description", event.target.value || undefined)}
+          onChange={(value) => update("description", value || undefined)}
         />
       </div>
       {validationError ? (
@@ -301,11 +302,15 @@ export function AddProjectFlow() {
 }
 
 export function ProjectMetadataManager({ draftId }: { draftId: Id<"publishingDrafts"> }) {
-  const project = useQuery(api.functions.projects.publishing.model.getMine, { draftId });
+  const auth = useConvexAuth();
+  const project = useQuery(
+    api.functions.projects.publishing.model.getMine,
+    auth.isAuthenticated ? { draftId } : "skip",
+  );
   const saveMetadata = useMutation(api.functions.projects.publishing.model.saveMetadata);
   const [busy, setBusy] = useState(false);
 
-  if (project === undefined) {
+  if (auth.isLoading || project === undefined) {
     return <p className="text-muted-foreground text-sm">Loading project metadata…</p>;
   }
 
@@ -384,17 +389,27 @@ export function ProjectMetadataManager({ draftId }: { draftId: Id<"publishingDra
 }
 
 export function ProjectWorkflowManager({ draftId }: { draftId: Id<"publishingDrafts"> }) {
-  const project = useQuery(api.functions.projects.publishing.model.getMine, { draftId });
+  const auth = useConvexAuth();
+  const project = useQuery(
+    api.functions.projects.publishing.model.getMine,
+    auth.isAuthenticated ? { draftId } : "skip",
+  );
+  const workflows = useQuery(
+    api.functions.projects.publishing.model.listAvailableWorkflows,
+    auth.isAuthenticated ? { draftId } : "skip",
+  );
+  const selectWorkflow = useMutation(api.functions.projects.publishing.model.selectWorkflow);
   const installWorkflow = useAction(api.functions.projects.publishing.actions.installWorkflow);
   const refreshPublishingState = useAction(
     api.functions.projects.publishing.actions.refreshPublishingState,
   );
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
 
-  if (project === undefined) {
+  if (auth.isLoading || project === undefined || workflows === undefined) {
     return <p className="text-muted-foreground text-sm">Loading workflow status…</p>;
   }
   const { draft, repository } = project;
+  const selectedWorkflow = workflows.find((workflow) => workflow.key === draft.workflowTemplateKey);
 
   async function run(action: Exclude<BusyAction, null>, operation: () => Promise<void>) {
     setBusyAction(action);
@@ -416,18 +431,66 @@ export function ProjectWorkflowManager({ draftId }: { draftId: Id<"publishingDra
           </span>
           <CardTitle>Managed publishing workflow</CardTitle>
           <CardDescription>
-            BedrockNexus commits the validated workflow directly to{" "}
-            <strong>{repository.defaultBranch}</strong>. Installing again updates the file to the
-            latest admin-managed template.
+            Pick the build workflow for this project. BedrockNexus commits the validated workflow
+            directly to <strong>{repository.defaultBranch}</strong>. Installing again updates the
+            file to the latest admin-managed template.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
+          <div className="space-y-3">
+            <Label>Publishing workflow</Label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {workflows.map((workflow) => {
+                const isSelected = workflow.key === draft.workflowTemplateKey;
+                return (
+                  <button
+                    className={
+                      isSelected
+                        ? "rounded-lg border border-primary bg-primary p-4 text-left text-primary-foreground"
+                        : "rounded-lg border p-4 text-left transition-colors hover:bg-muted"
+                    }
+                    disabled={draft.status === "inReview" || busyAction !== null}
+                    key={workflow.key}
+                    onClick={() =>
+                      run("workflow", async () => {
+                        await selectWorkflow({ draftId: draft._id, key: workflow.key });
+                        toast.success(`${workflow.label} selected.`);
+                      })
+                    }
+                    type="button"
+                  >
+                    <span className="block font-medium text-sm">{workflow.label}</span>
+                    <span
+                      className={
+                        isSelected
+                          ? "mt-1 block text-primary-foreground/80 text-xs"
+                          : "mt-1 block text-muted-foreground text-xs"
+                      }
+                    >
+                      {workflow.buildSystem} · {workflow.source} · v{workflow.version}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {draft.workflowInstalled && selectedWorkflow ? (
+              <p className="text-muted-foreground text-xs">
+                Choosing a different workflow requires installing the newly selected template before
+                this project can be submitted again.
+              </p>
+            ) : null}
+          </div>
           <div className="rounded-lg border bg-muted p-4 font-mono text-sm">
             .github/workflows/bedrocknexus-publish.yml
           </div>
           <div className="flex flex-wrap gap-3">
             <Button
-              disabled={!draft.projectId || draft.status === "inReview" || busyAction !== null}
+              disabled={
+                !draft.projectId ||
+                !draft.workflowTemplateKey ||
+                draft.status === "inReview" ||
+                busyAction !== null
+              }
               onClick={() =>
                 run("workflow", async () => {
                   const result = await installWorkflow({ draftId: draft._id });
@@ -470,10 +533,14 @@ export function ProjectWorkflowManager({ draftId }: { draftId: Id<"publishingDra
             </Badge>
           </div>
           <div className="flex items-center justify-between gap-3">
+            <span>Selected workflow</span>
+            <span className="text-right">{selectedWorkflow?.label ?? "Not selected"}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
             <span>Template version</span>
             <span>{draft.workflowTemplateVersion ?? "Not recorded"}</span>
           </div>
-          {draft.workflowCommitSha ? (
+          {draft.workflowInstalled && draft.workflowCommitSha ? (
             <a
               className="block truncate text-primary hover:underline"
               href={`${repository.htmlUrl}/commit/${encodeURIComponent(draft.workflowCommitSha)}`}
@@ -490,10 +557,15 @@ export function ProjectWorkflowManager({ draftId }: { draftId: Id<"publishingDra
 }
 
 export function ProjectReleaseManager({ draftId }: { draftId: Id<"publishingDrafts"> }) {
-  const project = useQuery(api.functions.projects.publishing.model.getMine, { draftId });
-  const releases = useQuery(api.functions.projects.publishing.model.listDetectedReleases, {
-    draftId,
-  });
+  const auth = useConvexAuth();
+  const project = useQuery(
+    api.functions.projects.publishing.model.getMine,
+    auth.isAuthenticated ? { draftId } : "skip",
+  );
+  const releases = useQuery(
+    api.functions.projects.publishing.model.listDetectedReleases,
+    auth.isAuthenticated ? { draftId } : "skip",
+  );
   const refreshPublishingState = useAction(
     api.functions.projects.publishing.actions.refreshPublishingState,
   );
@@ -503,7 +575,7 @@ export function ProjectReleaseManager({ draftId }: { draftId: Id<"publishingDraf
   const submitForReview = useMutation(api.functions.projects.publishing.model.submitForReview);
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
 
-  if (project === undefined || releases === undefined) {
+  if (auth.isLoading || project === undefined || releases === undefined) {
     return <p className="text-muted-foreground text-sm">Loading releases…</p>;
   }
   const { draft } = project;

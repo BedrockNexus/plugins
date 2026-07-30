@@ -1,10 +1,11 @@
 import { createClient, type GenericCtx } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
 import { type BetterAuthOptions, betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { admin, organization } from "better-auth/plugins";
 import { adminAc, userAc } from "better-auth/plugins/admin/access";
 
-import { components } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import authConfig from "./auth.config";
 import authSchema from "./betterAuth/schema";
@@ -27,6 +28,36 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
     emailAndPassword: {
       enabled: false,
     },
+    user: {
+      additionalFields: {
+        githubUsername: {
+          type: "string",
+          required: false,
+          input: true,
+          returned: true,
+        },
+      },
+      deleteUser: {
+        enabled: true,
+        beforeDelete: async (user) => {
+          if (!("runMutation" in ctx)) {
+            throw new APIError("INTERNAL_SERVER_ERROR", {
+              message: "Account deletion is unavailable in this context.",
+            });
+          }
+
+          const blocker = await ctx.runMutation(internal.functions.site.accountDeletion.prepare, {
+            userId: user.id,
+          });
+
+          if (blocker) {
+            throw new APIError("BAD_REQUEST", {
+              message: blocker,
+            });
+          }
+        },
+      },
+    },
     socialProviders:
       githubClientId && githubClientSecret
         ? {
@@ -34,6 +65,10 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
               clientId: githubClientId,
               clientSecret: githubClientSecret,
               scope: ["read:user", "user:email"],
+              overrideUserInfoOnSignIn: true,
+              mapProfileToUser: (profile) => ({
+                githubUsername: profile.login,
+              }),
             },
           }
         : {},

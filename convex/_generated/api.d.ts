@@ -22,6 +22,7 @@ import type * as functions_projects_downloads from "../functions/projects/downlo
 import type * as functions_projects_projects from "../functions/projects/projects.js";
 import type * as functions_projects_publishing_actions from "../functions/projects/publishing/actions.js";
 import type * as functions_projects_publishing_model from "../functions/projects/publishing/model.js";
+import type * as functions_site_accountDeletion from "../functions/site/accountDeletion.js";
 import type * as functions_site_admin from "../functions/site/admin.js";
 import type * as functions_site_catalog from "../functions/site/catalog.js";
 import type * as functions_site_moderation from "../functions/site/moderation.js";
@@ -34,6 +35,8 @@ import type * as lib_domainAuthorization from "../lib/domainAuthorization.js";
 import type * as lib_downloadCounts from "../lib/downloadCounts.js";
 import type * as lib_projectAggregates from "../lib/projectAggregates.js";
 import type * as lib_slugs from "../lib/slugs.js";
+import type * as lib_usernames from "../lib/usernames.js";
+import type * as lib_workflowTemplates from "../lib/workflowTemplates.js";
 import type * as schemas_domain from "../schemas/domain.js";
 
 import type {
@@ -57,6 +60,7 @@ declare const fullApi: ApiFromModules<{
   "functions/projects/projects": typeof functions_projects_projects;
   "functions/projects/publishing/actions": typeof functions_projects_publishing_actions;
   "functions/projects/publishing/model": typeof functions_projects_publishing_model;
+  "functions/site/accountDeletion": typeof functions_site_accountDeletion;
   "functions/site/admin": typeof functions_site_admin;
   "functions/site/catalog": typeof functions_site_catalog;
   "functions/site/moderation": typeof functions_site_moderation;
@@ -69,6 +73,8 @@ declare const fullApi: ApiFromModules<{
   "lib/downloadCounts": typeof lib_downloadCounts;
   "lib/projectAggregates": typeof lib_projectAggregates;
   "lib/slugs": typeof lib_slugs;
+  "lib/usernames": typeof lib_usernames;
+  "lib/workflowTemplates": typeof lib_workflowTemplates;
   "schemas/domain": typeof schemas_domain;
 }>;
 

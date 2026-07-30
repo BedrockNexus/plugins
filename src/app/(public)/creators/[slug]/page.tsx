@@ -1,8 +1,13 @@
-import { FolderLibraryIcon, Link02Icon, UserCircleIcon } from "@hugeicons/core-free-icons";
+import {
+  FolderLibraryIcon,
+  GithubIcon,
+  Link02Icon,
+  UserCircleIcon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
 import { ProjectCard } from "@/components/registry/project-card";
@@ -21,7 +26,7 @@ export async function generateMetadata({ params }: CreatorPageProps): Promise<Me
     ? {
         title: result.creator.displayName,
         description: result.creator.bio ?? `Projects published by ${result.creator.displayName}.`,
-        alternates: { canonical: `/creators/${result.creator.slug}` },
+        alternates: { canonical: `/creators/${result.creator.username}` },
       }
     : { title: "Creator not found" };
 }
@@ -30,24 +35,45 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
   const { slug } = await params;
   const result = await fetchQuery(api.functions.site.catalog.getCreator, { slug });
   if (!result) notFound();
+  if (slug !== result.creator.username) {
+    redirect(`/creators/${result.creator.username}`);
+  }
   const website = safeExternalUrl(result.creator.websiteUrl);
+  const github = result.creator.githubUsername
+    ? `https://github.com/${encodeURIComponent(result.creator.githubUsername)}`
+    : null;
 
   return (
     <PageShell
-      eyebrow="Creator"
+      eyebrow={`Creator · @${result.creator.username}`}
       title={result.creator.displayName}
       description={result.creator.bio ?? "A verified BedrockNexus Plugins creator."}
       actions={
-        website ? (
-          <a
-            className={buttonVariants({ variant: "outline" })}
-            href={website}
-            rel="noreferrer"
-            target="_blank"
-          >
-            <HugeiconsIcon className="size-4" icon={Link02Icon} />
-            Website
-          </a>
+        website || github ? (
+          <div className="flex flex-wrap gap-2">
+            {github ? (
+              <a
+                className={buttonVariants({ variant: "outline" })}
+                href={github}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <HugeiconsIcon className="size-4" icon={GithubIcon} />@
+                {result.creator.githubUsername}
+              </a>
+            ) : null}
+            {website ? (
+              <a
+                className={buttonVariants({ variant: "outline" })}
+                href={website}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <HugeiconsIcon className="size-4" icon={Link02Icon} />
+                Website
+              </a>
+            ) : null}
+          </div>
         ) : undefined
       }
     >

@@ -24,7 +24,15 @@ import {
   requireOrganizationManager,
 } from "../../../lib/domainAuthorization";
 import { insertProjectAggregates, replaceProjectAggregates } from "../../../lib/projectAggregates";
-import { publishingDraftValidator, repositoryValidator } from "../../../schema";
+import {
+  listResolvedWorkflowTemplates,
+  resolveWorkflowTemplate,
+} from "../../../lib/workflowTemplates";
+import {
+  publishingDraftValidator,
+  repositoryValidator,
+  workflowTemplateKeyValidator,
+} from "../../../schema";
 
 const adapterIdValidator = v.union(v.literal("pocketmine-mp"), v.literal("powernukkitx"));
 
@@ -254,6 +262,72 @@ export const saveMetadata = authenticatedMutation({
   },
 });
 
+export const listAvailableWorkflows = authenticatedQuery({
+  args: { draftId: v.id("publishingDrafts") },
+  returns: v.array(
+    v.object({
+      key: workflowTemplateKeyValidator,
+      adapterId: adapterIdValidator,
+      buildSystem: v.union(v.literal("composer"), v.literal("gradle"), v.literal("maven")),
+      label: v.string(),
+      source: v.union(v.literal("default"), v.literal("override"), v.literal("custom")),
+      version: v.number(),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const draft = await requireOwnedDraft(ctx, args.draftId, ctx.user);
+    const templates = await listResolvedWorkflowTemplates(ctx, draft.adapterId);
+    return templates.map(({ key, adapterId, buildSystem, label, source, version }) => ({
+      key,
+      adapterId,
+      buildSystem,
+      label,
+      source,
+      version,
+    }));
+  },
+});
+
+export const selectWorkflow = authenticatedMutation({
+  args: {
+    draftId: v.id("publishingDrafts"),
+    key: workflowTemplateKeyValidator,
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const draft = await requireOwnedDraft(ctx, args.draftId, ctx.user);
+    if (draft.status === "inReview") {
+      throw new ConvexError({
+        code: "PUBLISHING_DRAFT_LOCKED",
+        message: "The workflow is locked while this release is under review.",
+      });
+    }
+    const template = await resolveWorkflowTemplate(ctx, args.key);
+    if (!template || template.adapterId !== draft.adapterId) {
+      throw new ConvexError({
+        code: "WORKFLOW_TEMPLATE_INCOMPATIBLE",
+        message: "The selected workflow is not available for this project.",
+      });
+    }
+    if (draft.workflowTemplateKey === template.key) {
+      return null;
+    }
+    await ctx.db.patch("publishingDrafts", draft._id, {
+      workflowTemplateKey: template.key,
+      workflowTemplateVersion: undefined,
+      workflowInstalledAt: undefined,
+      workflowInstalled: false,
+      verifiedBuild: false,
+      status: draft.projectId ? "metadataReady" : "detected",
+      reviewedAt: undefined,
+      reviewedBy: undefined,
+      reviewNotes: undefined,
+      updatedAt: Date.now(),
+    });
+    return null;
+  },
+});
+
 export const getActionContext = internalQuery({
   args: {
     tokenIdentifier: v.string(),
@@ -293,12 +367,19 @@ export const recordWorkflowCommit = internalMutation({
     draftId: v.id("publishingDrafts"),
     branch: v.string(),
     commitSha: v.string(),
+    templateKey: workflowTemplateKeyValidator,
     templateVersion: v.number(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     const user = await getUserByTokenIdentifier(ctx, args.tokenIdentifier);
     const draft = await requireOwnedDraft(ctx, args.draftId, user);
+    if (draft.workflowTemplateKey !== args.templateKey) {
+      throw new ConvexError({
+        code: "WORKFLOW_SELECTION_CHANGED",
+        message: "The selected workflow changed while it was being installed. Try again.",
+      });
+    }
     await ctx.db.patch("publishingDrafts", draft._id, {
       workflowBranch: args.branch,
       workflowPullRequestNumber: undefined,
@@ -371,10 +452,16 @@ export const recordGitHubState = internalMutation({
     const repository = await ctx.db.get("repositories", draft.repositoryId);
     const run = args.run;
     const release = args.release;
+    const selectedTemplate = draft.workflowTemplateKey
+      ? await resolveWorkflowTemplate(ctx, draft.workflowTemplateKey)
+      : null;
     const verifiedBuild = Boolean(
       repository &&
         !repository.isPrivate &&
         repository.accessStatus === "granted" &&
+        selectedTemplate &&
+        selectedTemplate.adapterId === draft.adapterId &&
+        selectedTemplate.version === draft.workflowTemplateVersion &&
         args.workflowInstalled &&
         run &&
         run.status === "completed" &&
@@ -544,8 +631,15 @@ export const recordGitHubState = internalMutation({
 });
 
 async function requirePublishableRelease(ctx: MutationCtx, draft: Doc<"publishingDrafts">) {
+  const selectedTemplate = draft.workflowTemplateKey
+    ? await resolveWorkflowTemplate(ctx, draft.workflowTemplateKey)
+    : null;
   if (
     !draft.projectId ||
+    !draft.workflowTemplateKey ||
+    !selectedTemplate ||
+    selectedTemplate.adapterId !== draft.adapterId ||
+    selectedTemplate.version !== draft.workflowTemplateVersion ||
     !draft.workflowInstalled ||
     !draft.primaryAssetId ||
     !draft.latestReleaseId ||
@@ -555,7 +649,7 @@ async function requirePublishableRelease(ctx: MutationCtx, draft: Doc<"publishin
     throw new ConvexError({
       code: "PUBLICATION_NOT_READY",
       message:
-        "Publication requires an installed workflow, verified release asset, and moderation-ready metadata.",
+        "Publication requires the current selected workflow, a verified release asset, and moderation-ready metadata.",
     });
   }
   const project = await ctx.db.get("projects", draft.projectId);

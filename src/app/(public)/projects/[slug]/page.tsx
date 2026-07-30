@@ -243,7 +243,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                   }
                 >
                   <HugeiconsIcon className="size-4" icon={StarIcon} />
-                  {project.organization?.name ?? project.creator?.displayName}
+                  {project.organization?.name ??
+                    (project.creator ? `@${project.creator.username}` : null)}
                 </Link>
               )}
               <a

@@ -186,11 +186,7 @@ export const publishingDraftStatusValidator = v.union(
   v.literal("published"),
 );
 
-export const workflowTemplateKeyValidator = v.union(
-  v.literal("pocketmine-mp:composer"),
-  v.literal("powernukkitx:gradle"),
-  v.literal("powernukkitx:maven"),
-);
+export const workflowTemplateKeyValidator = v.string();
 
 export const publishingDraftValidator = v.object({
   _id: v.id("publishingDrafts"),
@@ -218,6 +214,7 @@ export const publishingDraftValidator = v.object({
     v.union(v.literal("open"), v.literal("closed"), v.literal("merged")),
   ),
   workflowCommitSha: v.optional(v.string()),
+  workflowTemplateKey: v.optional(v.string()),
   workflowTemplateVersion: v.optional(v.number()),
   workflowInstalledAt: v.optional(v.number()),
   workflowInstalled: v.boolean(),
@@ -247,6 +244,9 @@ export const creatorProfileValidator = v.object({
   _id: v.id("creatorProfiles"),
   _creationTime: v.number(),
   userId: v.string(),
+  username: v.optional(v.string()),
+  usernameCustomizedAt: v.optional(v.number()),
+  githubUsername: v.optional(v.string()),
   slug: v.optional(v.string()),
   displayName: v.string(),
   bio: v.optional(v.string()),
@@ -343,6 +343,9 @@ export const projectValidator = v.object({
 export const tables = {
   creatorProfiles: defineTable({
     userId: v.string(),
+    username: v.optional(v.string()),
+    usernameCustomizedAt: v.optional(v.number()),
+    githubUsername: v.optional(v.string()),
     slug: v.optional(v.string()),
     displayName: v.string(),
     bio: v.optional(v.string()),
@@ -352,7 +355,17 @@ export const tables = {
     updatedAt: v.number(),
   })
     .index("by_user_id", ["userId"])
+    .index("by_username", ["username"])
+    .index("by_github_username", ["githubUsername"])
     .index("by_slug", ["slug"]),
+
+  creatorUsernameAliases: defineTable({
+    username: v.string(),
+    creatorProfileId: v.id("creatorProfiles"),
+    createdAt: v.number(),
+  })
+    .index("by_username", ["username"])
+    .index("by_creator_profile_id", ["creatorProfileId"]),
 
   organizationProfiles: defineTable({
     organizationId: v.string(),
@@ -430,6 +443,7 @@ export const tables = {
       v.union(v.literal("open"), v.literal("closed"), v.literal("merged")),
     ),
     workflowCommitSha: v.optional(v.string()),
+    workflowTemplateKey: v.optional(v.string()),
     workflowTemplateVersion: v.optional(v.number()),
     workflowInstalledAt: v.optional(v.number()),
     workflowInstalled: v.boolean(),
@@ -458,12 +472,14 @@ export const tables = {
     .index("by_status", ["status"])
     .index("by_repository_id", ["repositoryId"])
     .index("by_project_id", ["projectId"])
+    .index("by_workflow_template_key", ["workflowTemplateKey"])
     .index("by_repository_id_and_status", ["repositoryId", "status"]),
 
   workflowTemplates: defineTable({
     key: workflowTemplateKeyValidator,
     adapterId: v.union(v.literal("pocketmine-mp"), v.literal("powernukkitx")),
     buildSystem: v.union(v.literal("composer"), v.literal("gradle"), v.literal("maven")),
+    label: v.optional(v.string()),
     content: v.string(),
     version: v.number(),
     updatedBy: v.string(),

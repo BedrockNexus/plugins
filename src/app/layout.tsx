@@ -7,6 +7,7 @@ import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getToken } from "@/lib/auth-server";
 
+import "@mdxeditor/editor/style.css";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({

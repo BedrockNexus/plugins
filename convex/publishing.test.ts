@@ -129,6 +129,18 @@ async function createPublishingFoundation(
     adapterId,
     projectType: "plugin",
   });
+  await client.mutation(api.functions.projects.publishing.model.selectWorkflow, {
+    draftId,
+    key: adapterId === "pocketmine-mp" ? "pocketmine-mp:composer" : "powernukkitx:gradle",
+  });
+  await t.mutation(internal.functions.projects.publishing.model.recordWorkflowCommit, {
+    tokenIdentifier,
+    draftId,
+    branch: "main",
+    commitSha: "workflow-commit",
+    templateKey: adapterId === "pocketmine-mp" ? "pocketmine-mp:composer" : "powernukkitx:gradle",
+    templateVersion: 1,
+  });
   const moderator = t.withIdentity({
     subject: moderatorUserId,
     sessionId: moderatorUser.sessionId,
@@ -238,6 +250,23 @@ describe.each([
 });
 
 describe("publishing verification boundaries", () => {
+  it("requires the owner to choose a workflow compatible with the detected project", async () => {
+    const t = createTest();
+    const foundation = await createPublishingFoundation(t, "pocketmine-mp");
+
+    await expect(
+      foundation.client.mutation(api.functions.projects.publishing.model.selectWorkflow, {
+        draftId: foundation.draftId,
+        key: "powernukkitx:gradle",
+      }),
+    ).rejects.toThrow("not available for this project");
+
+    const project = await foundation.client.query(api.functions.projects.publishing.model.getMine, {
+      draftId: foundation.draftId,
+    });
+    expect(project.draft.workflowTemplateKey).toBe("pocketmine-mp:composer");
+  });
+
   it("lets an owner choose a verified release and resubmit after requested changes", async () => {
     const t = createTest();
     const foundation = await createPublishingFoundation(t, "pocketmine-mp");

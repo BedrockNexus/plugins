@@ -12,6 +12,7 @@ import betterAuthSchema from "./betterAuth/schema";
 import type { AppRole } from "./lib/authorization";
 import { insertProjectAggregates } from "./lib/projectAggregates";
 import { assertNormalizedSlug, normalizeSlug } from "./lib/slugs";
+import { assertUsername, normalizeUsername } from "./lib/usernames";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -28,7 +29,12 @@ function createTestClient() {
   return t;
 }
 
-async function insertUser(t: TestClient, label: string, role: AppRole = "developer") {
+async function insertUser(
+  t: TestClient,
+  label: string,
+  role: AppRole = "developer",
+  githubUsername?: string,
+) {
   const now = Date.now();
   const user = await t.mutation(components.betterAuth.adapter.create, {
     input: {
@@ -38,6 +44,7 @@ async function insertUser(t: TestClient, label: string, role: AppRole = "develop
         email: `${label}@example.com`,
         emailVerified: true,
         role,
+        ...(githubUsername ? { githubUsername } : {}),
         createdAt: now,
         updatedAt: now,
       },
@@ -153,6 +160,133 @@ describe("canonical slugs", () => {
     expect(normalizeSlug("Crème Brûlée")).toBe("creme-brulee");
     expect(assertNormalizedSlug("powernukkitx")).toBe("powernukkitx");
     expect(() => assertNormalizedSlug("PowerNukkitX")).toThrow("Slugs must be normalized");
+    expect(normalizeUsername(" Jean_TKG ")).toBe("jean-tkg");
+    expect(assertUsername("jeantkg")).toBe("jeantkg");
+    expect(() => assertUsername("-jeantkg")).toThrow("Usernames must be");
+  });
+});
+
+describe("creator profile settings", () => {
+  it("updates only the authenticated creator's public profile fields", async () => {
+    const t = createTestClient();
+    const creator = await insertUser(t, "profile-creator");
+
+    await creator.client.mutation(api.functions.site.users.syncCurrentUser, {});
+    await expect(
+      Promise.all([
+        creator.client.mutation(api.functions.site.users.syncCurrentUser, {}),
+        creator.client.mutation(api.functions.site.users.syncCurrentUser, {}),
+      ]),
+    ).resolves.toHaveLength(2);
+
+    await expect(
+      creator.client.mutation(api.functions.site.users.updateMyCreatorProfile, {
+        username: "profile-creator",
+        bio: "Builds publishing tools.",
+        websiteUrl: "https://example.com/plugins",
+      }),
+    ).resolves.toMatchObject({
+      displayName: "profile-creator",
+      bio: "Builds publishing tools.",
+      websiteUrl: "https://example.com/plugins",
+    });
+
+    await expect(
+      creator.client.query(api.functions.site.users.getMyCreatorProfile, {}),
+    ).resolves.toMatchObject({
+      bio: "Builds publishing tools.",
+      websiteUrl: "https://example.com/plugins",
+    });
+
+    await expect(
+      creator.client.mutation(api.functions.site.users.updateMyCreatorProfile, {
+        username: "profile-creator",
+        websiteUrl: "ftp://example.com/plugins",
+      }),
+    ).rejects.toThrow("Website URLs must use HTTP or HTTPS");
+  });
+
+  it("seeds usernames from GitHub and preserves aliases after a rename", async () => {
+    const t = createTestClient();
+    const creator = await insertUser(t, "Jean Claude", "developer", "jeantkg");
+    const otherCreator = await insertUser(t, "Other Creator", "developer", "other-creator");
+
+    await expect(
+      creator.client.mutation(api.functions.site.users.syncCurrentUser, {}),
+    ).resolves.toMatchObject({
+      creatorProfile: {
+        username: "jeantkg",
+        githubUsername: "jeantkg",
+        slug: "jeantkg",
+        displayName: "Jean Claude",
+      },
+    });
+    await otherCreator.client.mutation(api.functions.site.users.syncCurrentUser, {});
+
+    await expect(
+      creator.client.mutation(api.functions.site.users.updateMyCreatorProfile, {
+        username: "nexus-jean",
+      }),
+    ).resolves.toMatchObject({
+      username: "nexus-jean",
+      githubUsername: "jeantkg",
+      slug: "nexus-jean",
+    });
+
+    await expect(
+      t.query(api.functions.site.catalog.getCreator, { slug: "jeantkg" }),
+    ).resolves.toMatchObject({
+      creator: {
+        username: "nexus-jean",
+        githubUsername: "jeantkg",
+      },
+    });
+
+    await expect(
+      otherCreator.client.mutation(api.functions.site.users.updateMyCreatorProfile, {
+        username: "jeantkg",
+      }),
+    ).rejects.toThrow("already in use");
+  });
+
+  it("migrates an automatic legacy handle when GitHub metadata first arrives", async () => {
+    const t = createTestClient();
+    const creator = await insertUser(t, "Jean Claude");
+
+    await expect(
+      creator.client.mutation(api.functions.site.users.syncCurrentUser, {}),
+    ).resolves.toMatchObject({
+      creatorProfile: {
+        username: "jean-claude",
+      },
+    });
+
+    await t.mutation(components.betterAuth.adapter.updateOne, {
+      input: {
+        model: "user",
+        where: [{ field: "_id", value: creator.authUserId }],
+        update: {
+          githubUsername: "jeantkg",
+          updatedAt: Date.now(),
+        },
+      },
+    });
+
+    await expect(
+      creator.client.mutation(api.functions.site.users.syncCurrentUser, {}),
+    ).resolves.toMatchObject({
+      creatorProfile: {
+        username: "jeantkg",
+        githubUsername: "jeantkg",
+      },
+    });
+    await expect(
+      t.query(api.functions.site.catalog.getCreator, { slug: "jean-claude" }),
+    ).resolves.toMatchObject({
+      creator: {
+        username: "jeantkg",
+      },
+    });
   });
 });
 

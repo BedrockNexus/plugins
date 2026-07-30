@@ -14,6 +14,8 @@ import { supportLinkTypeValidator } from "../../schema";
 
 const publicCreatorValidator = v.object({
   slug: v.string(),
+  username: v.string(),
+  githubUsername: v.optional(v.string()),
   displayName: v.string(),
   avatarUrl: v.optional(v.string()),
 });
@@ -97,13 +99,16 @@ async function hydrateProjectCard(
     publishedAt: project.publishedAt,
     updatedAt: project.updatedAt,
     software: { slug: software.slug, name: software.name },
-    creator: creator?.slug
-      ? {
-          slug: creator.slug,
-          displayName: creator.displayName,
-          avatarUrl: creator.avatarUrl,
-        }
-      : null,
+    creator:
+      creator?.username || creator?.slug
+        ? {
+            slug: creator.username ?? (creator.slug as string),
+            username: creator.username ?? (creator.slug as string),
+            githubUsername: creator.githubUsername,
+            displayName: creator.displayName,
+            avatarUrl: creator.avatarUrl,
+          }
+        : null,
     organization: organization
       ? {
           slug: organization.slug,
@@ -477,11 +482,29 @@ export const getCreator = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    const creator = await ctx.db
+    const directCreator = await ctx.db
       .query("creatorProfiles")
-      .withIndex("by_slug", (index) => index.eq("slug", args.slug))
+      .withIndex("by_username", (index) => index.eq("username", args.slug))
       .unique();
-    if (!creator?.slug) {
+    const legacyCreator = directCreator
+      ? null
+      : await ctx.db
+          .query("creatorProfiles")
+          .withIndex("by_slug", (index) => index.eq("slug", args.slug))
+          .unique();
+    const usernameAlias =
+      directCreator || legacyCreator
+        ? null
+        : await ctx.db
+            .query("creatorUsernameAliases")
+            .withIndex("by_username", (index) => index.eq("username", args.slug))
+            .unique();
+    const creator =
+      directCreator ??
+      legacyCreator ??
+      (usernameAlias ? await ctx.db.get("creatorProfiles", usernameAlias.creatorProfileId) : null);
+    const username = creator?.username ?? creator?.slug;
+    if (!creator || !username) {
       return null;
     }
     const [projects, supportLinks] = await Promise.all([
@@ -505,7 +528,9 @@ export const getCreator = query({
     ]);
     return {
       creator: {
-        slug: creator.slug,
+        slug: username,
+        username,
+        githubUsername: creator.githubUsername,
         displayName: creator.displayName,
         avatarUrl: creator.avatarUrl,
         bio: sanitizeRegistryText(creator.bio, 1_000),
@@ -614,7 +639,7 @@ export const sitemapEntries = query({
           index.eq("visibility", "public").eq("status", "published"),
         )
         .take(1_000),
-      ctx.db.query("creatorProfiles").withIndex("by_slug").take(1_000),
+      ctx.db.query("creatorProfiles").withIndex("by_username").take(1_000),
       ctx.db
         .query("serverSoftware")
         .withIndex("by_enabled_and_sort_order", (index) => index.eq("enabled", true))
@@ -637,7 +662,9 @@ export const sitemapEntries = query({
     return {
       projects: projects.map((item) => ({ slug: item.slug, updatedAt: item.updatedAt })),
       creators: creators.flatMap((item) =>
-        item.slug ? [{ slug: item.slug, updatedAt: item.updatedAt }] : [],
+        item.username || item.slug
+          ? [{ slug: item.username ?? (item.slug as string), updatedAt: item.updatedAt }]
+          : [],
       ),
       organizations: organizations.map((item) => ({
         slug: item.slug,
