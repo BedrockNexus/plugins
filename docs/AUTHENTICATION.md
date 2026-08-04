@@ -14,7 +14,7 @@ Create an OAuth application in GitHub Developer settings with:
   `http://localhost:3000/api/auth/callback/github`
 
 This OAuth application is only for user sign-in. Do not reuse the GitHub App
-that will be created for repository installations in Phase 4.
+used for repository installations.
 
 Better Auth requests `read:user` and `user:email`. The email scope is required
 so accounts with a private public email can still return a verified address.

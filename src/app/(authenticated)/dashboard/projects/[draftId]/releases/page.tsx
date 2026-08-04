@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
-import type { Id } from "@/../convex/_generated/dataModel";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import { ProjectManageNav, ProjectReleaseManager } from "@/components/publishing/publishing-wizard";
+import { resolveProjectDraftId } from "@/lib/resolve-project-draft";
 
 export const metadata: Metadata = {
   title: "Project releases",
@@ -15,6 +15,7 @@ export default async function ProjectReleasesPage({
   params: Promise<{ draftId: string }>;
 }) {
   const { draftId } = await params;
+  const resolvedDraftId = await resolveProjectDraftId(draftId);
   return (
     <DashboardPageShell
       eyebrow="Projects"
@@ -22,7 +23,7 @@ export default async function ProjectReleasesPage({
       description="Detect verified GitHub releases, choose one, and submit it for moderator review."
     >
       <ProjectManageNav draftId={draftId} />
-      <ProjectReleaseManager draftId={draftId as Id<"publishingDrafts">} />
+      <ProjectReleaseManager draftId={resolvedDraftId} />
     </DashboardPageShell>
   );
 }

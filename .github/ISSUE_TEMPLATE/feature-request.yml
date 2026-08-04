@@ -1,0 +1,40 @@
+name: Feature request
+description: Propose a focused product or developer-experience improvement.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user or maintainer problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed outcome
+      description: Describe the desired behavior without prescribing unnecessary implementation details.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds or other approaches did you consider?
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Public catalog
+        - Publisher dashboard
+        - Organizations
+        - GitHub integration
+        - Publishing and moderation
+        - Downloads
+        - Authentication and settings
+        - Developer experience
+    validations:
+      required: true

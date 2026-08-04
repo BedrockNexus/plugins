@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 
-import type { Id } from "@/../convex/_generated/dataModel";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import {
   ProjectManageNav,
   ProjectMetadataManager,
 } from "@/components/publishing/publishing-wizard";
+import { resolveProjectDraftId } from "@/lib/resolve-project-draft";
 
 export const metadata: Metadata = {
   title: "Manage project",
@@ -18,6 +18,7 @@ export default async function ManageProjectPage({
   params: Promise<{ draftId: string }>;
 }) {
   const { draftId } = await params;
+  const resolvedDraftId = await resolveProjectDraftId(draftId);
   return (
     <DashboardPageShell
       eyebrow="Projects"
@@ -25,7 +26,7 @@ export default async function ManageProjectPage({
       description="Manage the catalog information for this plugin. Repository setup stays in Add Project."
     >
       <ProjectManageNav draftId={draftId} />
-      <ProjectMetadataManager draftId={draftId as Id<"publishingDrafts">} />
+      <ProjectMetadataManager draftId={resolvedDraftId} />
     </DashboardPageShell>
   );
 }

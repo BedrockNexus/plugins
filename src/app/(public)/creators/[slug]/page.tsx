@@ -2,6 +2,7 @@ import {
   FolderLibraryIcon,
   GithubIcon,
   Link02Icon,
+  Location01Icon,
   UserCircleIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -42,6 +43,10 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
   const github = result.creator.githubUsername
     ? `https://github.com/${encodeURIComponent(result.creator.githubUsername)}`
     : null;
+  const socialAccounts = result.creator.socialAccounts.flatMap((account) => {
+    const url = safeExternalUrl(account.url);
+    return url ? [{ ...account, url }] : [];
+  });
 
   return (
     <PageShell
@@ -49,8 +54,14 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
       title={result.creator.displayName}
       description={result.creator.bio ?? "A verified BedrockNexus Plugins creator."}
       actions={
-        website || github ? (
+        result.creator.location || website || github || socialAccounts.length > 0 ? (
           <div className="flex flex-wrap gap-2">
+            {result.creator.location ? (
+              <span className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm">
+                <HugeiconsIcon className="size-4" icon={Location01Icon} />
+                {result.creator.location}
+              </span>
+            ) : null}
             {github ? (
               <a
                 className={buttonVariants({ variant: "outline" })}
@@ -73,6 +84,18 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
                 Website
               </a>
             ) : null}
+            {socialAccounts.map((account) => (
+              <a
+                className={buttonVariants({ variant: "outline" })}
+                href={account.url}
+                key={`${account.provider}-${account.url}`}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <HugeiconsIcon className="size-4" icon={Link02Icon} />
+                {account.provider}
+              </a>
+            ))}
           </div>
         ) : undefined
       }

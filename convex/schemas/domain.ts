@@ -176,7 +176,6 @@ export const webhookDeliveryAttemptValidator = v.union(
 export const publishingDraftStatusValidator = v.union(
   v.literal("detected"),
   v.literal("metadataReady"),
-  v.literal("workflowPullRequestOpen"),
   v.literal("workflowInstalled"),
   v.literal("releaseDetected"),
   v.literal("readyToPublish"),
@@ -250,8 +249,10 @@ export const creatorProfileValidator = v.object({
   slug: v.optional(v.string()),
   displayName: v.string(),
   bio: v.optional(v.string()),
+  location: v.optional(v.string()),
   avatarUrl: v.optional(v.string()),
   websiteUrl: v.optional(v.string()),
+  socialAccounts: v.optional(v.array(v.object({ provider: v.string(), url: v.string() }))),
   createdAt: v.number(),
   updatedAt: v.number(),
 });
@@ -349,8 +350,10 @@ export const tables = {
     slug: v.optional(v.string()),
     displayName: v.string(),
     bio: v.optional(v.string()),
+    location: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
     websiteUrl: v.optional(v.string()),
+    socialAccounts: v.optional(v.array(v.object({ provider: v.string(), url: v.string() }))),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

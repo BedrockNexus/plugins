@@ -21,6 +21,10 @@ export const tables = {
     banReason: v.optional(v.union(v.null(), v.string())),
     banExpires: v.optional(v.union(v.null(), v.number())),
     githubUsername: v.optional(v.union(v.null(), v.string())),
+    githubBio: v.optional(v.union(v.null(), v.string())),
+    githubLocation: v.optional(v.union(v.null(), v.string())),
+    githubWebsite: v.optional(v.union(v.null(), v.string())),
+    githubSocialAccounts: v.optional(v.union(v.null(), v.string())),
   })
     .index("email_name", ["email", "name"])
     .index("githubUsername", ["githubUsername"])

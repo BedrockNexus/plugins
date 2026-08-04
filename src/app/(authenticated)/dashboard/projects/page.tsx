@@ -1,8 +1,11 @@
 import {
   Add01Icon,
   CheckmarkCircle02Icon,
+  Download01Icon,
+  Edit02Icon,
   GithubIcon,
   Package01Icon,
+  RepositoryIcon,
   ViewIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -10,12 +13,23 @@ import type { Metadata, Route } from "next";
 import Link from "next/link";
 
 import { api } from "@/../convex/_generated/api";
+import type { Doc } from "@/../convex/_generated/dataModel";
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Stat, StatDescription, StatIndicator, StatLabel, StatValue } from "@/components/ui/stat";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { fetchAuthQuery } from "@/lib/auth-server";
 import { formatCompactNumber, formatRegistryDate } from "@/lib/format-registry";
+import { createProjectDashboardId } from "@/lib/project-dashboard-id";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -30,9 +44,22 @@ const statusMessages = {
   "connection-failed": "The installation could not be verified. Start the GitHub flow again.",
 } as const;
 
-function displayStatus(status: string) {
-  return status.replace(/([a-z])([A-Z])/g, "$1 $2");
-}
+type ProjectTableStatus = Doc<"projects">["status"] | Doc<"publishingDrafts">["status"];
+
+const projectTableStatusLabels = {
+  detected: "Detected",
+  metadataReady: "Metadata ready",
+  workflowInstalled: "Workflow installed",
+  releaseDetected: "Release detected",
+  readyToPublish: "Ready to publish",
+  inReview: "In review",
+  changesRequested: "Changes requested",
+  rejected: "Rejected",
+  published: "Published",
+  draft: "Draft",
+  review: "Review",
+  archived: "Archived",
+} as const satisfies Record<ProjectTableStatus, string>;
 
 export default async function ProjectsPage({
   searchParams,
@@ -48,15 +75,19 @@ export default async function ProjectsPage({
   const draftByProjectId = new Map(
     drafts
       .filter(({ draft }) => draft.projectId)
-      .map(({ draft }) => [draft.projectId as string, draft]),
+      .map((entry) => [entry.draft.projectId as string, entry]),
   );
   const projectIds = new Set(projects.map((project) => project.projectId as string));
   const rows = [
-    ...projects.map((project) => ({
-      key: project.projectId as string,
-      project,
-      draft: draftByProjectId.get(project.projectId as string),
-    })),
+    ...projects.map((project) => {
+      const draftEntry = draftByProjectId.get(project.projectId as string);
+      return {
+        key: project.projectId as string,
+        project,
+        draft: draftEntry?.draft,
+        repository: draftEntry?.repository,
+      };
+    }),
     ...drafts
       .filter(({ draft }) => !draft.projectId || !projectIds.has(draft.projectId as string))
       .map(({ draft, repository }) => ({
@@ -112,30 +143,39 @@ export default async function ProjectsPage({
             label: "Projects",
             value: rows.length.toString(),
             detail: "Drafts and published plugins",
+            icon: Package01Icon,
+            color: "default" as const,
           },
           {
             label: "Connected repositories",
             value: connectedRepositories.toString(),
             detail: "Public repositories available",
+            icon: RepositoryIcon,
+            color: "info" as const,
           },
           {
             label: "Published",
             value: publishedProjects.length.toString(),
             detail: "Approved in the public catalog",
+            icon: CheckmarkCircle02Icon,
+            color: "success" as const,
           },
           {
             label: "Downloads",
             value: formatCompactNumber(totalDownloads),
             detail: "Across published projects",
+            icon: Download01Icon,
+            color: "default" as const,
           },
         ].map((metric) => (
-          <Card className="shadow-none" key={metric.label}>
-            <CardContent className="p-5">
-              <p className="text-muted-foreground text-sm">{metric.label}</p>
-              <p className="mt-2 font-bold text-3xl tracking-tight">{metric.value}</p>
-              <p className="mt-1 text-muted-foreground text-xs">{metric.detail}</p>
-            </CardContent>
-          </Card>
+          <Stat className="shadow-none" key={metric.label}>
+            <StatLabel>{metric.label}</StatLabel>
+            <StatIndicator color={metric.color} variant="icon">
+              <HugeiconsIcon icon={metric.icon} />
+            </StatIndicator>
+            <StatValue>{metric.value}</StatValue>
+            <StatDescription>{metric.detail}</StatDescription>
+          </Stat>
         ))}
       </div>
 
@@ -160,116 +200,114 @@ export default async function ProjectsPage({
           </CardContent>
         </Card>
       ) : (
-        <Card className="overflow-hidden shadow-none">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[880px] text-left text-sm">
-              <thead className="border-b bg-muted text-muted-foreground">
-                <tr>
-                  <th className="px-5 py-3 font-medium">Project</th>
-                  <th className="px-5 py-3 font-medium">Repository</th>
-                  <th className="px-5 py-3 font-medium">Release</th>
-                  <th className="px-5 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium">Updated</th>
-                  <th className="px-5 py-3 text-right font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {rows.map((row) => {
-                  const name = row.project?.name ?? row.draft?.name ?? "Detected project";
-                  const summary = row.project?.summary ?? row.draft?.summary;
-                  const repository =
-                    row.project?.repository ??
-                    ("repository" in row
-                      ? {
-                          fullName: row.repository.fullName,
-                          htmlUrl: row.repository.htmlUrl,
-                        }
-                      : null);
-                  const statusValue = row.draft?.status ?? row.project?.status ?? "draft";
-                  const manageHref = row.draft
-                    ? (`/dashboard/projects/${row.draft._id}` as Route)
-                    : null;
-                  return (
-                    <tr className="align-middle" key={row.key}>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
-                            <HugeiconsIcon className="size-4" icon={Package01Icon} />
-                          </span>
-                          <div className="min-w-0">
-                            <p className="font-medium">{name}</p>
-                            <p className="max-w-72 truncate text-muted-foreground text-xs">
-                              {summary}
-                            </p>
-                          </div>
+        <Card className="overflow-hidden py-0 shadow-none">
+          <Table className="min-w-[760px]">
+            <TableHeader className="bg-muted/60">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="h-11 px-5">Project</TableHead>
+                <TableHead>Release</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Updated</TableHead>
+                <TableHead className="pr-5 text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row) => {
+                const name = row.project?.name ?? row.draft?.name ?? "Detected project";
+                const repository = row.repository
+                  ? {
+                      fullName: row.repository.fullName,
+                      htmlUrl: row.repository.htmlUrl,
+                    }
+                  : (row.project?.repository ?? null);
+                const statusValue = row.draft?.status ?? row.project?.status ?? "draft";
+                const projectKey = row.repository
+                  ? createProjectDashboardId(row.repository.githubRepositoryId)
+                  : null;
+                const manageHref =
+                  row.draft && projectKey ? (`/dashboard/projects/${projectKey}` as Route) : null;
+                return (
+                  <TableRow key={row.key}>
+                    <TableCell className="px-5 py-3.5">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate font-semibold">{name}</p>
+                          {projectKey ? (
+                            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                              {projectKey}
+                            </span>
+                          ) : null}
                         </div>
-                      </td>
-                      <td className="px-5 py-4">
                         {repository ? (
                           <a
-                            className="hover:text-primary hover:underline"
+                            className="mt-1 inline-flex max-w-72 items-center gap-1.5 truncate text-muted-foreground text-xs hover:text-foreground"
                             href={repository.htmlUrl}
                             rel="noreferrer"
                             target="_blank"
                           >
-                            {repository.fullName}
+                            <HugeiconsIcon className="size-3.5 shrink-0" icon={GithubIcon} />
+                            <span className="truncate">{repository.fullName}</span>
                           </a>
                         ) : (
-                          <span className="text-muted-foreground">Not connected</span>
+                          <span className="mt-1 block text-muted-foreground text-xs">
+                            Repository unavailable
+                          </span>
                         )}
-                      </td>
-                      <td className="px-5 py-4">
-                        {row.draft?.latestTag ??
-                          (row.project?.latestVersion
-                            ? `v${row.project.latestVersion.version}`
-                            : "No release detected")}
-                      </td>
-                      <td className="px-5 py-4">
-                        <Badge
-                          variant={
-                            statusValue === "published"
-                              ? "accent"
-                              : statusValue === "rejected"
-                                ? "destructive"
-                                : "outline"
-                          }
-                        >
-                          {displayStatus(statusValue)}
-                        </Badge>
-                      </td>
-                      <td className="px-5 py-4 text-muted-foreground">
-                        {formatRegistryDate(
-                          row.project?.updatedAt ?? row.draft?.updatedAt ?? Date.now(),
-                        )}
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex justify-end gap-2">
-                          {manageHref ? (
-                            <Link
-                              className={buttonVariants({ variant: "outline", size: "sm" })}
-                              href={manageHref}
-                            >
-                              Manage
-                            </Link>
-                          ) : null}
-                          {row.project?.status === "published" &&
-                          row.project.visibility === "public" ? (
-                            <Link
-                              aria-label={`View ${row.project.name}`}
-                              className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
-                              href={`/projects/${row.project.slug}` as Route}
-                            >
-                              <HugeiconsIcon icon={ViewIcon} />
-                            </Link>
-                          ) : null}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {row.draft?.latestTag ??
+                        (row.project?.latestVersion
+                          ? `v${row.project.latestVersion.version}`
+                          : "No release")}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          statusValue === "published"
+                            ? "accent"
+                            : statusValue === "rejected"
+                              ? "destructive"
+                              : "outline"
+                        }
+                      >
+                        {projectTableStatusLabels[statusValue]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatRegistryDate(
+                        row.project?.updatedAt ?? row.draft?.updatedAt ?? Date.now(),
+                      )}
+                    </TableCell>
+                    <TableCell className="pr-5">
+                      <div className="flex justify-end gap-1">
+                        {manageHref ? (
+                          <Link
+                            aria-label={`Edit ${name}`}
+                            className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
+                            href={manageHref}
+                            title={`Edit ${name}`}
+                          >
+                            <HugeiconsIcon icon={Edit02Icon} />
+                          </Link>
+                        ) : null}
+                        {row.project?.status === "published" &&
+                        row.project.visibility === "public" ? (
+                          <Link
+                            aria-label={`View ${row.project.name}`}
+                            className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
+                            href={`/projects/${row.project.slug}` as Route}
+                          >
+                            <HugeiconsIcon icon={ViewIcon} />
+                          </Link>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
           <div className="flex items-center justify-between border-t px-5 py-3 text-muted-foreground text-xs">
             <span>{rows.length} projects</span>
             <a

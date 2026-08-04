@@ -37,7 +37,11 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                   createdAt: number;
                   email: string;
                   emailVerified: boolean;
+                  githubBio?: null | string;
+                  githubLocation?: null | string;
+                  githubSocialAccounts?: null | string;
                   githubUsername?: null | string;
+                  githubWebsite?: null | string;
                   image?: null | string;
                   name: string;
                   role?: null | string;
@@ -155,6 +159,10 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                     | "banReason"
                     | "banExpires"
                     | "githubUsername"
+                    | "githubBio"
+                    | "githubLocation"
+                    | "githubWebsite"
+                    | "githubSocialAccounts"
                     | "_id";
                   mode?: "sensitive" | "insensitive";
                   operator?:
@@ -446,6 +454,10 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                     | "banReason"
                     | "banExpires"
                     | "githubUsername"
+                    | "githubBio"
+                    | "githubLocation"
+                    | "githubWebsite"
+                    | "githubSocialAccounts"
                     | "_id";
                   mode?: "sensitive" | "insensitive";
                   operator?:
@@ -808,7 +820,11 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                   createdAt?: number;
                   email?: string;
                   emailVerified?: boolean;
+                  githubBio?: null | string;
+                  githubLocation?: null | string;
+                  githubSocialAccounts?: null | string;
                   githubUsername?: null | string;
+                  githubWebsite?: null | string;
                   image?: null | string;
                   name?: string;
                   role?: null | string;
@@ -830,6 +846,10 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                     | "banReason"
                     | "banExpires"
                     | "githubUsername"
+                    | "githubBio"
+                    | "githubLocation"
+                    | "githubWebsite"
+                    | "githubSocialAccounts"
                     | "_id";
                   mode?: "sensitive" | "insensitive";
                   operator?:
@@ -1173,7 +1193,11 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                   createdAt?: number;
                   email?: string;
                   emailVerified?: boolean;
+                  githubBio?: null | string;
+                  githubLocation?: null | string;
+                  githubSocialAccounts?: null | string;
                   githubUsername?: null | string;
+                  githubWebsite?: null | string;
                   image?: null | string;
                   name?: string;
                   role?: null | string;
@@ -1195,6 +1219,10 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                     | "banReason"
                     | "banExpires"
                     | "githubUsername"
+                    | "githubBio"
+                    | "githubLocation"
+                    | "githubWebsite"
+                    | "githubSocialAccounts"
                     | "_id";
                   mode?: "sensitive" | "insensitive";
                   operator?:

@@ -1,11 +1,17 @@
 "use client";
 
-import { DashboardBrowsingIcon, Home01Icon } from "@hugeicons/core-free-icons";
+import {
+  Building03Icon,
+  DashboardBrowsingIcon,
+  Home01Icon,
+  Package01Icon,
+  UserIcon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { UserButton } from "@/components/auth/user/user-button";
+import { UserButton, type UserButtonLink } from "@/components/auth/user/user-button";
 import { BrandMark } from "@/components/brand-mark";
 import { publicNavigation } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -15,6 +21,33 @@ const mobileNavigation = [
   ...publicNavigation,
   { href: "/dashboard", label: "Dashboard", icon: DashboardBrowsingIcon },
 ] as const;
+
+const userButtonLinks: UserButtonLink[] = [
+  {
+    label: "Profile",
+    href: "/dashboard/settings/profile",
+    icon: <HugeiconsIcon className="text-muted-foreground" icon={UserIcon} />,
+    visibility: "authenticated",
+  },
+  {
+    label: "Dashboard",
+    href: "/dashboard",
+    icon: <HugeiconsIcon className="text-muted-foreground" icon={DashboardBrowsingIcon} />,
+    visibility: "authenticated",
+  },
+  {
+    label: "Projects",
+    href: "/dashboard/projects",
+    icon: <HugeiconsIcon className="text-muted-foreground" icon={Package01Icon} />,
+    visibility: "authenticated",
+  },
+  {
+    label: "Organizations",
+    href: "/dashboard/organizations",
+    icon: <HugeiconsIcon className="text-muted-foreground" icon={Building03Icon} />,
+    visibility: "authenticated",
+  },
+];
 
 function isActiveRoute(pathname: string, href: string) {
   return href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
@@ -51,7 +84,7 @@ export function SiteHeader() {
             </div>
 
             <div className="flex items-center justify-end">
-              <UserButton size="icon" />
+              <UserButton links={userButtonLinks} size="icon" />
             </div>
           </div>
         </nav>
@@ -83,6 +116,7 @@ export function SiteHeader() {
             <UserButton
               align="center"
               className="size-5"
+              links={userButtonLinks}
               sideOffset={12}
               size="icon"
               variant="ghost"

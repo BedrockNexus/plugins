@@ -1,6 +1,5 @@
 "use client";
 
-import { organizationPlugin } from "@better-auth-ui/core/plugins";
 import type { AuthClient } from "@better-auth-ui/react";
 import type { AuthClient as ConvexAuthClient } from "@convex-dev/better-auth/react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
@@ -13,6 +12,7 @@ import type { ComponentPropsWithoutRef, PropsWithChildren, ReactNode } from "rea
 
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { organizationPlugin } from "@/lib/auth/organization-plugin";
 import { authClient } from "@/lib/auth-client";
 import { deleteUserPlugin } from "@/lib/delete-user-plugin";
 import { getQueryClient } from "@/lib/query-client";

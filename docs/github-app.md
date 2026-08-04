@@ -14,7 +14,7 @@ Create the App under the `BedrockNexus` organization with these settings:
 | Callback URL | `http://localhost:3000/api/github/callback` | `https://plugins.bedrocknexus.com/api/github/callback` |
 | Setup URL | Leave blank | Leave blank |
 | Request user authorization during installation | Enabled | Enabled |
-| Webhook URL | `https://woozy-marten-367.convex.site/github/webhooks` | The production Convex site URL followed by `/github/webhooks` |
+| Webhook URL | The development Convex site URL followed by `/github/webhooks` | The production Convex site URL followed by `/github/webhooks` |
 | Webhook secret | A dedicated random secret | A separate dedicated random secret |
 | Where can this GitHub App be installed? | Any account | Any account |
 

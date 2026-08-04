@@ -1,5 +1,4 @@
 import {
-  type AuthPlugin,
   AuthProvider as AuthProviderPrimitive,
   type AuthProviderProps,
 } from "@better-auth-ui/react";
@@ -8,10 +7,6 @@ import type { ComponentPropsWithoutRef, ComponentType, PropsWithChildren, ReactN
 import { ErrorToaster } from "./error-toaster";
 
 declare module "@better-auth-ui/core" {
-  interface AuthPluginRegister {
-    shadcn: AuthPlugin;
-  }
-
   interface AuthConfig {
     /**
      * React component used to render internal navigation links.

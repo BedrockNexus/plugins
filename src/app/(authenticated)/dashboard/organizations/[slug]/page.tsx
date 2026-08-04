@@ -1,6 +1,5 @@
-import type { Metadata } from "next";
-
-import { OrganizationWorkspace } from "@/components/organizations/organization-dashboard";
+import type { Metadata, Route } from "next";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Organization workspace",
@@ -13,5 +12,5 @@ export default async function OrganizationWorkspacePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  return <OrganizationWorkspace slug={slug} />;
+  redirect(`/dashboard/organizations/${encodeURIComponent(slug)}/settings` as Route);
 }

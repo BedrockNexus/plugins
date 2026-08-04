@@ -7,6 +7,10 @@ const enabledSettingsPaths = [viewPaths.settings.account, viewPaths.settings.sec
 export default async function SettingsPage({ params }: { params: Promise<{ path: string }> }) {
   const { path } = await params;
 
+  if (path === "organizations") {
+    redirect("/dashboard/organizations" as Route);
+  }
+
   if (!enabledSettingsPaths.includes(path)) {
     notFound();
   }

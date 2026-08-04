@@ -1,5 +1,5 @@
 import { ConvexError, v } from "convex/values";
-
+import { parseProjectDashboardId } from "../../../../src/lib/project-dashboard-id";
 import {
   type ProjectMetadataInput,
   projectMetadataSchema,
@@ -1092,5 +1092,38 @@ export const getMine = authenticatedQuery({
       });
     }
     return { draft, repository };
+  },
+});
+
+export const resolveMine = authenticatedQuery({
+  args: { reference: v.string() },
+  returns: v.union(v.id("publishingDrafts"), v.null()),
+  handler: async (ctx, args) => {
+    const githubRepositoryId = parseProjectDashboardId(args.reference);
+    let draftId: Id<"publishingDrafts"> | null = null;
+
+    if (githubRepositoryId !== null) {
+      const repository = await ctx.db
+        .query("repositories")
+        .withIndex("by_github_repository_id", (query) =>
+          query.eq("githubRepositoryId", githubRepositoryId),
+        )
+        .unique();
+      if (repository) {
+        const draft = await ctx.db
+          .query("publishingDrafts")
+          .withIndex("by_repository_id", (query) => query.eq("repositoryId", repository._id))
+          .unique();
+        draftId = draft?._id ?? null;
+      }
+    } else {
+      draftId = ctx.db.normalizeId("publishingDrafts", args.reference);
+    }
+
+    if (!draftId) {
+      return null;
+    }
+    await requireOwnedDraft(ctx, draftId, ctx.user);
+    return draftId;
   },
 });

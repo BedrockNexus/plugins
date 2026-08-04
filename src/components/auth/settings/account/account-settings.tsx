@@ -5,7 +5,6 @@ import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/utils";
 import { ChangeEmail } from "./change-email";
-import { UserProfile } from "./user-profile";
 
 export type AccountSettingsProps = {
   className?: string;
@@ -16,7 +15,6 @@ export type AccountSettingsProps = {
  *
  * Uses `emailAndPassword` and `plugins` from `useAuth()` to conditionally
  * show sections:
- * - `UserProfile` always renders.
  * - `ChangeEmail` renders when `emailAndPassword?.enabled` is truthy or the
  *   `magicLink` plugin is registered.
  * - Plugin-contributed account cards are rendered via the plugins array
@@ -32,7 +30,6 @@ export function AccountSettings({
 
   return (
     <div className={cn("flex w-full flex-col gap-4 md:gap-6", className)} {...props}>
-      <UserProfile />
       {(emailAndPassword?.enabled || hasMagicLink) && <ChangeEmail />}
       {plugins.flatMap(
         (plugin) =>

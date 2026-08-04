@@ -100,12 +100,14 @@ Acceptance:
 - [x] Use Better Auth UI for sign-in, account, sessions, security, and linked
   accounts. Do not maintain duplicate custom auth screens.
 - [x] Match the Hub dashboard settings structure with separate Profile,
-  Account, Providers, and Sessions routes, including editable public creator
-  profile fields backed by the existing creator profile record and the Better
-  Auth UI shadcn account-deletion Danger Zone.
-- [x] Seed editable, unique creator usernames from GitHub login names, retain
-  GitHub attribution separately, and redirect previous creator handles through
-  transactional username aliases.
+  Account, Providers, and Sessions routes, including a read-only GitHub-synced
+  creator profile and the Better Auth UI shadcn account-deletion Danger Zone.
+- [x] Seed unique creator handles from GitHub login names, keep them synchronized
+  rather than user-editable, retain GitHub attribution separately, and redirect
+  previous creator handles through transactional username aliases.
+- [x] Keep all user profile metadata GitHub-managed, remove local profile and
+  avatar editing, and synchronize name, username, avatar, bio, location, website,
+  and public social accounts from GitHub.
 - [x] Add backend role helpers for developer, verified creator, moderator, admin.
 - [x] Keep users and application roles in Better Auth while synchronizing only
   the product-specific creator profile.
@@ -135,6 +137,10 @@ Acceptance:
   empty states, and stale pre-authentication copy.
 - [x] Standardize application and shared UI iconography on Hugeicons using the
   official Lucide migration workflow.
+- [x] Redesign the public home page around discovery and traceable publishing,
+  and add the Dice UI Base Stat component for catalog and dashboard metrics.
+- [x] Align the public account menu links, keep the default Better Auth UI
+  organization switcher, simplify the project table, and use compact project URLs.
 
 Acceptance:
 
@@ -400,7 +406,7 @@ Acceptance:
   and download routes.
 - [ ] Add end-to-end tests for authentication, GitHub installation, publishing,
   verified release correlation, download, and moderation.
-- [ ] Add dependency and code scanning in CI.
+- [x] Add dependency and code scanning in CI.
 - [ ] Create staging and production Convex deployments and GitHub Apps.
 - [ ] Deploy staging on Vercel and run the full acceptance flow.
 - [ ] Configure `plugins.bedrocknexus.com` only after staging sign-off.

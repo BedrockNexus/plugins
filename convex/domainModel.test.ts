@@ -34,6 +34,12 @@ async function insertUser(
   label: string,
   role: AppRole = "developer",
   githubUsername?: string,
+  githubProfile?: {
+    bio?: string;
+    location?: string;
+    website?: string;
+    socialAccounts?: Array<{ provider: string; url: string }>;
+  },
 ) {
   const now = Date.now();
   const user = await t.mutation(components.betterAuth.adapter.create, {
@@ -45,6 +51,12 @@ async function insertUser(
         emailVerified: true,
         role,
         ...(githubUsername ? { githubUsername } : {}),
+        ...(githubProfile?.bio ? { githubBio: githubProfile.bio } : {}),
+        ...(githubProfile?.location ? { githubLocation: githubProfile.location } : {}),
+        ...(githubProfile?.website ? { githubWebsite: githubProfile.website } : {}),
+        ...(githubProfile?.socialAccounts
+          ? { githubSocialAccounts: JSON.stringify(githubProfile.socialAccounts) }
+          : {}),
         createdAt: now,
         updatedAt: now,
       },
@@ -167,9 +179,17 @@ describe("canonical slugs", () => {
 });
 
 describe("creator profile settings", () => {
-  it("updates only the authenticated creator's public profile fields", async () => {
+  it("projects read-only GitHub profile fields into the public creator profile", async () => {
     const t = createTestClient();
-    const creator = await insertUser(t, "profile-creator");
+    const creator = await insertUser(t, "Profile Creator", "developer", "profile-creator", {
+      bio: "Builds publishing tools.",
+      location: "Damascus",
+      website: "https://example.com/plugins",
+      socialAccounts: [
+        { provider: "mastodon", url: "https://example.social/@creator" },
+        { provider: "unsafe", url: "javascript:alert(1)" },
+      ],
+    });
 
     await creator.client.mutation(api.functions.site.users.syncCurrentUser, {});
     await expect(
@@ -180,36 +200,20 @@ describe("creator profile settings", () => {
     ).resolves.toHaveLength(2);
 
     await expect(
-      creator.client.mutation(api.functions.site.users.updateMyCreatorProfile, {
-        username: "profile-creator",
-        bio: "Builds publishing tools.",
-        websiteUrl: "https://example.com/plugins",
-      }),
-    ).resolves.toMatchObject({
-      displayName: "profile-creator",
-      bio: "Builds publishing tools.",
-      websiteUrl: "https://example.com/plugins",
-    });
-
-    await expect(
       creator.client.query(api.functions.site.users.getMyCreatorProfile, {}),
     ).resolves.toMatchObject({
+      displayName: "Profile Creator",
+      username: "profile-creator",
       bio: "Builds publishing tools.",
+      location: "Damascus",
       websiteUrl: "https://example.com/plugins",
+      socialAccounts: [{ provider: "mastodon", url: "https://example.social/@creator" }],
     });
-
-    await expect(
-      creator.client.mutation(api.functions.site.users.updateMyCreatorProfile, {
-        username: "profile-creator",
-        websiteUrl: "ftp://example.com/plugins",
-      }),
-    ).rejects.toThrow("Website URLs must use HTTP or HTTPS");
   });
 
-  it("seeds usernames from GitHub and preserves aliases after a rename", async () => {
+  it("tracks GitHub usernames and preserves aliases after a GitHub rename", async () => {
     const t = createTestClient();
     const creator = await insertUser(t, "Jean Claude", "developer", "jeantkg");
-    const otherCreator = await insertUser(t, "Other Creator", "developer", "other-creator");
 
     await expect(
       creator.client.mutation(api.functions.site.users.syncCurrentUser, {}),
@@ -221,32 +225,67 @@ describe("creator profile settings", () => {
         displayName: "Jean Claude",
       },
     });
-    await otherCreator.client.mutation(api.functions.site.users.syncCurrentUser, {});
-
-    await expect(
-      creator.client.mutation(api.functions.site.users.updateMyCreatorProfile, {
-        username: "nexus-jean",
-      }),
-    ).resolves.toMatchObject({
-      username: "nexus-jean",
-      githubUsername: "jeantkg",
-      slug: "nexus-jean",
-    });
-
-    await expect(
-      t.query(api.functions.site.catalog.getCreator, { slug: "jeantkg" }),
-    ).resolves.toMatchObject({
-      creator: {
-        username: "nexus-jean",
-        githubUsername: "jeantkg",
+    await t.mutation(components.betterAuth.adapter.updateOne, {
+      input: {
+        model: "user",
+        where: [{ field: "_id", value: creator.authUserId }],
+        update: {
+          githubUsername: "nexus-jean",
+          updatedAt: Date.now(),
+        },
       },
     });
 
     await expect(
-      otherCreator.client.mutation(api.functions.site.users.updateMyCreatorProfile, {
+      creator.client.mutation(api.functions.site.users.syncCurrentUser, {}),
+    ).resolves.toMatchObject({
+      creatorProfile: {
+        username: "nexus-jean",
+        githubUsername: "nexus-jean",
+        slug: "nexus-jean",
+      },
+    });
+
+    await expect(
+      t.query(api.functions.site.catalog.getCreator, { slug: "jeantkg" }),
+    ).resolves.toMatchObject({ creator: { username: "nexus-jean" } });
+  });
+
+  it("migrates a previously customized handle back to the GitHub username", async () => {
+    const t = createTestClient();
+    const creator = await insertUser(t, "Jean Claude", "developer", "jeantkg");
+
+    await creator.client.mutation(api.functions.site.users.syncCurrentUser, {});
+    await t.run(async (ctx) => {
+      const profile = await ctx.db
+        .query("creatorProfiles")
+        .withIndex("by_user_id", (query) => query.eq("userId", creator.authUserId))
+        .unique();
+      if (!profile) {
+        throw new Error("Creator profile fixture was not found.");
+      }
+      await ctx.db.patch("creatorProfiles", profile._id, {
+        username: "nexus-jean",
+        usernameCustomizedAt: Date.now(),
+        slug: "nexus-jean",
+      });
+      await ctx.db.insert("creatorUsernameAliases", {
         username: "jeantkg",
-      }),
-    ).rejects.toThrow("already in use");
+        creatorProfileId: profile._id,
+        createdAt: Date.now(),
+      });
+    });
+
+    const result = await creator.client.mutation(api.functions.site.users.syncCurrentUser, {});
+    expect(result.creatorProfile).toMatchObject({
+      username: "jeantkg",
+      githubUsername: "jeantkg",
+      slug: "jeantkg",
+    });
+    expect(result.creatorProfile.usernameCustomizedAt).toBeUndefined();
+    await expect(
+      t.query(api.functions.site.catalog.getCreator, { slug: "nexus-jean" }),
+    ).resolves.toMatchObject({ creator: { username: "jeantkg" } });
   });
 
   it("migrates an automatic legacy handle when GitHub metadata first arrives", async () => {

@@ -474,7 +474,9 @@ export const getCreator = query({
     v.object({
       creator: publicCreatorValidator.extend({
         bio: v.optional(v.string()),
+        location: v.optional(v.string()),
         websiteUrl: v.optional(v.string()),
+        socialAccounts: v.array(v.object({ provider: v.string(), url: v.string() })),
       }),
       projects: v.array(projectCardValidator),
       supportLinks: v.array(supportLinkValidator),
@@ -534,7 +536,9 @@ export const getCreator = query({
         displayName: creator.displayName,
         avatarUrl: creator.avatarUrl,
         bio: sanitizeRegistryText(creator.bio, 1_000),
+        location: creator.location,
         websiteUrl: creator.websiteUrl,
+        socialAccounts: creator.socialAccounts ?? [],
       },
       projects: await hydrateProjectPage(ctx, projects),
       supportLinks: supportLinks.map((link) => ({

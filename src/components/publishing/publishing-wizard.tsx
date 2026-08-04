@@ -24,6 +24,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createProjectDashboardId } from "@/lib/project-dashboard-id";
 import { type ProjectMetadataInput, projectMetadataSchema } from "@/lib/publishing/metadata";
 import { cn } from "@/lib/utils";
 
@@ -175,6 +176,9 @@ export function AddProjectFlow() {
   const [selectedDraftId, setSelectedDraftId] = useState<Id<"publishingDrafts"> | null>(null);
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const repositories = installations?.flatMap((installation) => installation.repositories) ?? [];
+  const selectedRepository = repositories.find(
+    (repository) => repository._id === selectedRepositoryId,
+  );
   const selectedDraft = drafts?.find(({ draft }) => draft._id === selectedDraftId)?.draft;
 
   async function run(action: Exclude<BusyAction, null>, operation: () => Promise<void>) {
@@ -277,7 +281,12 @@ export function AddProjectFlow() {
                 run("metadata", async () => {
                   await saveMetadata({ draftId: selectedDraft._id, ...metadata });
                   toast.success("Project added.");
-                  router.push(`/dashboard/projects/${selectedDraft._id}` as Route);
+                  if (!selectedRepository) {
+                    throw new Error("The selected repository is no longer available.");
+                  }
+                  router.push(
+                    `/dashboard/projects/${createProjectDashboardId(selectedRepository.githubRepositoryId)}` as Route,
+                  );
                 })
               }
               submitLabel="Add project"

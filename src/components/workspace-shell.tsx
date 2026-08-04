@@ -3,7 +3,6 @@
 import {
   Alert01Icon,
   Analytics01Icon,
-  ArrowDown01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Building03Icon,
@@ -22,20 +21,11 @@ import type { Route } from "next";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
+import { OrganizationSwitcher } from "@/components/auth/organization/organization-switcher";
 import { UserButton, type UserButtonLink } from "@/components/auth/user/user-button";
 import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 type NavigationItem = {
@@ -218,82 +208,24 @@ function DashboardNavigation({
   );
 }
 
-function WorkspaceSwitcher({
-  pathname,
-  onNavigate,
-}: {
-  pathname: string;
-  onNavigate?: () => void;
-}) {
+function WorkspaceSwitcher({ onNavigate }: { onNavigate?: () => void }) {
   const router = useRouter();
-  const organizations = authClient.useListOrganizations();
-  const organizationSlug = pathname.match(/^\/dashboard\/organizations\/([^/]+)/)?.[1];
-  const activeOrganization = organizations.data?.find(
-    (organization) => organization.slug === organizationSlug,
-  );
-
-  async function navigate(href: string, organizationId?: string | null) {
-    if (organizationId !== undefined) {
-      const result = await authClient.organization.setActive({ organizationId });
-      if (result.error) {
-        return;
-      }
-    }
-    onNavigate?.();
-    router.push(href as Route);
-  }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        aria-label="Switch dashboard workspace"
-        className="flex w-full items-center gap-3 rounded-xl border bg-card p-3 text-left shadow-xs outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
-          <HugeiconsIcon
-            className="size-4"
-            icon={activeOrganization ? Building03Icon : Package01Icon}
-          />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate font-semibold text-sm">
-            {activeOrganization?.name ?? "Personal workspace"}
-          </span>
-          <span className="block truncate text-muted-foreground text-xs">
-            {activeOrganization ? "Team workspace" : "Your projects"}
-          </span>
-        </span>
-        <HugeiconsIcon className="size-4 shrink-0 text-muted-foreground" icon={ArrowDown01Icon} />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="min-w-60">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Personal</DropdownMenuLabel>
-          <DropdownMenuItem onClick={() => void navigate("/dashboard", null)}>
-            <HugeiconsIcon className="text-muted-foreground" icon={Package01Icon} />
-            Personal workspace
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-        {organizations.data && organizations.data.length > 0 ? (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>Organizations</DropdownMenuLabel>
-              {organizations.data.map((organization) => (
-                <DropdownMenuItem
-                  key={organization.id}
-                  onClick={() =>
-                    void navigate(`/dashboard/organizations/${organization.slug}`, organization.id)
-                  }
-                >
-                  <HugeiconsIcon className="text-muted-foreground" icon={Building03Icon} />
-                  <span className="min-w-0 flex-1 truncate">{organization.name}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuGroup>
-          </>
-        ) : null}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <OrganizationSwitcher
+      align="start"
+      className="w-full"
+      setActive={(organization) => {
+        onNavigate?.();
+        router.push(
+          (organization
+            ? `/dashboard/organizations/${organization.slug}/settings`
+            : "/dashboard") as Route,
+        );
+      }}
+      side="right"
+      sideOffset={8}
+    />
   );
 }
 
@@ -322,7 +254,7 @@ function SidebarContent({
             </div>
           </div>
         ) : (
-          <WorkspaceSwitcher onNavigate={onNavigate} pathname={pathname} />
+          <WorkspaceSwitcher onNavigate={onNavigate} />
         )}
       </div>
       <Separator className="mb-4" />

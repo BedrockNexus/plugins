@@ -4,7 +4,7 @@ import type { Doc } from "../../_generated/dataModel";
 import { type MutationCtx, mutation, query } from "../../_generated/server";
 import { authComponent } from "../../auth";
 import { normalizeAppRole } from "../../lib/authorization";
-import { assertUsername, normalizeUsername } from "../../lib/usernames";
+import { normalizeUsername } from "../../lib/usernames";
 import { creatorProfileValidator, roleValidator } from "../../schema";
 
 const currentUserValidator = v.object({
@@ -19,6 +19,44 @@ const syncedUserValidator = v.object({
   user: currentUserValidator,
   creatorProfile: creatorProfileValidator,
 });
+
+type SocialAccount = {
+  provider: string;
+  url: string;
+};
+
+function optionalTrimmed(value: string | null | undefined, maxLength: number) {
+  const normalized = value?.trim();
+  return normalized ? normalized.slice(0, maxLength) : undefined;
+}
+
+function parseSocialAccounts(value: string | null | undefined): SocialAccount[] | undefined {
+  if (!value) return undefined;
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (!Array.isArray(parsed)) return undefined;
+
+    const accounts = parsed.flatMap((account): SocialAccount[] => {
+      if (!account || typeof account !== "object") return [];
+      const provider = "provider" in account ? account.provider : undefined;
+      const urlValue = "url" in account ? account.url : undefined;
+      if (typeof provider !== "string" || typeof urlValue !== "string") return [];
+      try {
+        const url = new URL(urlValue);
+        if (url.protocol !== "https:" || !url.hostname) return [];
+        const normalizedProvider = provider.trim().slice(0, 50);
+        return normalizedProvider ? [{ provider: normalizedProvider, url: url.toString() }] : [];
+      } catch {
+        return [];
+      }
+    });
+
+    return accounts.length > 0 ? accounts.slice(0, 4) : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 function publicCurrentUser(user: Awaited<ReturnType<typeof authComponent.getAuthUser>>) {
   return {
@@ -67,7 +105,8 @@ async function resolveCreatorUsername(
 ) {
   if (
     profile?.username &&
-    (profile.usernameCustomizedAt || profile.githubUsername || !githubUsername)
+    (!githubUsername ||
+      (!profile.usernameCustomizedAt && profile.githubUsername === githubUsername))
   ) {
     return profile.username;
   }
@@ -126,6 +165,10 @@ export const syncCurrentUser = mutation({
     const now = Date.now();
     const image = authUser.image ?? undefined;
     const githubUsername = authUser.githubUsername ?? undefined;
+    const bio = optionalTrimmed(authUser.githubBio, 1_000);
+    const location = optionalTrimmed(authUser.githubLocation, 200);
+    const websiteUrl = optionalTrimmed(authUser.githubWebsite, 500);
+    const socialAccounts = parseSocialAccounts(authUser.githubSocialAccounts);
     const existingProfile = await ctx.db
       .query("creatorProfiles")
       .withIndex("by_user_id", (query) => query.eq("userId", authUser._id))
@@ -146,7 +189,11 @@ export const syncCurrentUser = mutation({
           githubUsername,
           slug: creatorUsername,
           displayName: authUser.name,
+          bio,
+          location,
           ...(image ? { avatarUrl: image } : {}),
+          websiteUrl,
+          socialAccounts,
           createdAt: now,
           updatedAt: now,
         });
@@ -157,18 +204,35 @@ export const syncCurrentUser = mutation({
         existingProfile.slug !== creatorUsername ||
         existingProfile.githubUsername !== githubUsername ||
         existingProfile.displayName !== authUser.name ||
-        existingProfile.avatarUrl !== image)
+        existingProfile.avatarUrl !== image ||
+        existingProfile.bio !== bio ||
+        existingProfile.location !== location ||
+        existingProfile.websiteUrl !== websiteUrl ||
+        JSON.stringify(existingProfile.socialAccounts) !== JSON.stringify(socialAccounts))
     ) {
       if (existingProfile.slug && existingProfile.slug !== creatorUsername) {
         await preserveUsernameAlias(ctx, existingProfile, existingProfile.slug, now);
       }
 
+      const reclaimedAlias = await ctx.db
+        .query("creatorUsernameAliases")
+        .withIndex("by_username", (query) => query.eq("username", creatorUsername))
+        .unique();
+      if (reclaimedAlias?.creatorProfileId === existingProfile._id) {
+        await ctx.db.delete(reclaimedAlias._id);
+      }
+
       await ctx.db.patch("creatorProfiles", existingProfile._id, {
         username: creatorUsername,
+        usernameCustomizedAt: undefined,
         githubUsername,
         slug: creatorUsername,
         displayName: authUser.name,
         avatarUrl: image,
+        bio,
+        location,
+        websiteUrl,
+        socialAccounts,
         updatedAt: now,
       });
     }
@@ -209,83 +273,5 @@ export const getMyCreatorProfile = query({
     }
 
     return profile;
-  },
-});
-
-export const updateMyCreatorProfile = mutation({
-  args: {
-    username: v.string(),
-    bio: v.optional(v.string()),
-    websiteUrl: v.optional(v.string()),
-  },
-  returns: creatorProfileValidator,
-  handler: async (ctx, args) => {
-    const authUser = await authComponent.getAuthUser(ctx);
-    const profile = await ctx.db
-      .query("creatorProfiles")
-      .withIndex("by_user_id", (query) => query.eq("userId", authUser._id))
-      .unique();
-
-    if (!profile) {
-      throw new Error("The creator profile could not be found.");
-    }
-
-    const username = assertUsername(args.username.trim());
-    const usernameClaim = await usernameOwner(ctx, username);
-    if (usernameClaim && usernameClaim !== profile._id) {
-      throw new Error("That username is already in use.");
-    }
-
-    const bio = args.bio?.trim();
-    if (bio && bio.length > 1_000) {
-      throw new Error("Creator bios must be 1,000 characters or fewer.");
-    }
-
-    const websiteUrl = args.websiteUrl?.trim();
-    if (websiteUrl && websiteUrl.length > 500) {
-      throw new Error("Website URLs must be 500 characters or fewer.");
-    }
-    if (websiteUrl) {
-      const url = new URL(websiteUrl);
-      if (!["http:", "https:"].includes(url.protocol)) {
-        throw new Error("Website URLs must use HTTP or HTTPS.");
-      }
-    }
-
-    const previousUsername = profile.username ?? profile.slug;
-    if (previousUsername && previousUsername !== username) {
-      const aliases = await ctx.db
-        .query("creatorUsernameAliases")
-        .withIndex("by_creator_profile_id", (query) => query.eq("creatorProfileId", profile._id))
-        .take(26);
-      if (aliases.length >= 25) {
-        throw new Error("This profile has reached the username-change limit.");
-      }
-      await preserveUsernameAlias(ctx, profile, previousUsername, Date.now());
-    }
-
-    const reclaimedAlias = await ctx.db
-      .query("creatorUsernameAliases")
-      .withIndex("by_username", (query) => query.eq("username", username))
-      .unique();
-    if (reclaimedAlias?.creatorProfileId === profile._id) {
-      await ctx.db.delete(reclaimedAlias._id);
-    }
-
-    await ctx.db.patch("creatorProfiles", profile._id, {
-      username,
-      usernameCustomizedAt: Date.now(),
-      slug: username,
-      bio: bio || undefined,
-      websiteUrl: websiteUrl || undefined,
-      updatedAt: Date.now(),
-    });
-
-    const updated = await ctx.db.get("creatorProfiles", profile._id);
-    if (!updated) {
-      throw new Error("The creator profile could not be updated.");
-    }
-
-    return updated;
   },
 });
