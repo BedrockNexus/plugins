@@ -17,7 +17,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ path:
 
   redirect(
     (path === viewPaths.settings.security
-      ? "/dashboard/settings/providers"
+      ? "/dashboard/settings/sessions"
       : "/dashboard/settings/profile") as Route,
   );
 }

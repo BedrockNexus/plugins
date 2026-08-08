@@ -1,226 +1,87 @@
 "use client";
 
 import {
+  AccountSetting01Icon,
   Alert01Icon,
   Analytics01Icon,
   ArrowLeft01Icon,
-  ArrowRight01Icon,
   Building03Icon,
-  Cancel01Icon,
   Clock01Icon,
+  ComputerIcon,
   DashboardBrowsingIcon,
-  Menu01Icon,
   Package01Icon,
   Settings01Icon,
   Shield01Icon,
+  UserIcon,
   WebhookIcon,
   WorkflowSquare01Icon,
 } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
-import type { Route } from "next";
+import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { type ReactNode, useState } from "react";
+import type { ReactNode } from "react";
+
 import { OrganizationSwitcher } from "@/components/auth/organization/organization-switcher";
 import { UserButton, type UserButtonLink } from "@/components/auth/user/user-button";
 import { BrandMark } from "@/components/brand-mark";
-import { Button } from "@/components/ui/button";
+import { SidebarNav, type SidebarNavItem } from "@/components/sidebar/sidebar-nav";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
 
-type NavigationItem = {
-  href: string;
-  label: string;
-  icon: IconSvgElement;
-  exact?: boolean;
-  children?: Array<{
-    href: string;
-    label: string;
-  }>;
-};
-
-const dashboardNavigation: Array<{
-  label: string;
-  items: NavigationItem[];
-}> = [
+const mainNavigation: SidebarNavItem[] = [
   {
-    label: "Dashboard",
-    items: [
-      {
-        href: "/dashboard",
-        label: "Overview",
-        icon: DashboardBrowsingIcon,
-        exact: true,
-      },
-    ],
-  },
-  {
-    label: "Manage",
-    items: [
-      { href: "/dashboard/projects", label: "Projects", icon: Package01Icon },
-      { href: "/dashboard/organizations", label: "Organizations", icon: Building03Icon },
-      { href: "/dashboard/analytics", label: "Analytics", icon: Analytics01Icon },
-    ],
-  },
-  {
-    label: "Settings",
-    items: [
-      {
-        href: "/dashboard/settings",
-        label: "Settings",
-        icon: Settings01Icon,
-        children: [
-          { href: "/dashboard/settings/profile", label: "Profile" },
-          { href: "/dashboard/settings/account", label: "Account" },
-          { href: "/dashboard/settings/providers", label: "Providers" },
-          { href: "/dashboard/settings/sessions", label: "Sessions" },
-        ],
-      },
-    ],
+    title: "Overview",
+    url: "/dashboard",
+    icon: DashboardBrowsingIcon,
+    exactMatch: true,
   },
 ];
 
-const adminNavigation: Array<{ label: string; items: NavigationItem[] }> = [
-  {
-    label: "Administration",
-    items: [
-      { href: "/admin", label: "Overview", icon: Shield01Icon, exact: true },
-      { href: "/admin/reviews", label: "Publishing reviews", icon: Package01Icon },
-      { href: "/admin/workflows", label: "Workflow templates", icon: WorkflowSquare01Icon },
-      { href: "/admin/reports", label: "Reports", icon: Alert01Icon },
-      { href: "/admin/deliveries", label: "Deliveries", icon: WebhookIcon },
-      { href: "/admin/history", label: "History", icon: Clock01Icon },
-    ],
-  },
+const manageNavigation: SidebarNavItem[] = [
+  { title: "Projects", url: "/dashboard/projects", icon: Package01Icon },
+  { title: "Organizations", url: "/dashboard/organizations", icon: Building03Icon },
+  { title: "Analytics", url: "/dashboard/analytics", icon: Analytics01Icon },
 ];
 
-function isActiveRoute(pathname: string, item: NavigationItem) {
-  return item.exact
-    ? pathname === item.href
-    : pathname === item.href || pathname.startsWith(`${item.href}/`);
-}
+const settingsNavigation: SidebarNavItem[] = [
+  { title: "Profile", url: "/dashboard/settings/profile", icon: UserIcon },
+  { title: "Account", url: "/dashboard/settings/account", icon: AccountSetting01Icon },
+  { title: "Sessions", url: "/dashboard/settings/sessions", icon: ComputerIcon },
+];
 
-function DashboardNavigation({
-  pathname,
-  navigation,
-  onNavigate,
-}: {
-  pathname: string;
-  navigation: Array<{ label: string; items: NavigationItem[] }>;
-  onNavigate?: () => void;
-}) {
-  const [settingsOpen, setSettingsOpen] = useState(true);
+const adminNavigation: SidebarNavItem[] = [
+  { title: "Overview", url: "/admin", icon: Shield01Icon, exactMatch: true },
+  { title: "Publishing reviews", url: "/admin/reviews", icon: Package01Icon },
+  { title: "Workflow templates", url: "/admin/workflows", icon: WorkflowSquare01Icon },
+  { title: "Reports", url: "/admin/reports", icon: Alert01Icon },
+  { title: "Deliveries", url: "/admin/deliveries", icon: WebhookIcon },
+  { title: "History", url: "/admin/history", icon: Clock01Icon },
+];
 
-  return (
-    <nav className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-3 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {navigation.map((group) => (
-        <div key={group.label}>
-          <p className="px-2 pb-2 font-medium text-muted-foreground text-xs">{group.label}</p>
-          <div className="space-y-1">
-            {group.items.map((item) => {
-              const active = isActiveRoute(pathname, item);
-
-              if (item.children) {
-                return (
-                  <div key={item.href}>
-                    <button
-                      aria-expanded={settingsOpen}
-                      className={cn(
-                        "group flex h-10 w-full items-center gap-3 rounded-lg px-2.5 font-medium text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground",
-                        active && "bg-muted text-foreground",
-                      )}
-                      onClick={() => setSettingsOpen((open) => !open)}
-                      type="button"
-                    >
-                      <span
-                        className={cn(
-                          "grid size-7 shrink-0 place-items-center rounded-md transition-colors",
-                          active
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-background text-muted-foreground ring-1 ring-border group-hover:text-foreground",
-                        )}
-                      >
-                        <HugeiconsIcon className="size-4" icon={item.icon} />
-                      </span>
-                      <span>{item.label}</span>
-                      <HugeiconsIcon
-                        className={cn(
-                          "ml-auto size-4 transition-transform",
-                          settingsOpen && "rotate-90",
-                        )}
-                        icon={ArrowRight01Icon}
-                      />
-                    </button>
-                    {settingsOpen ? (
-                      <div className="mt-1 ml-[1.6rem] space-y-1 border-l pl-4">
-                        {item.children.map((child) => {
-                          const childActive = pathname === child.href;
-                          return (
-                            <Link
-                              aria-current={childActive ? "page" : undefined}
-                              className={cn(
-                                "flex h-8 items-center rounded-md px-2 text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground",
-                                childActive && "bg-muted font-medium text-foreground",
-                              )}
-                              href={child.href as Route}
-                              key={child.href}
-                              onClick={onNavigate}
-                            >
-                              {child.label}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              }
-
-              return (
-                <Link
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "group flex h-10 items-center gap-3 rounded-lg px-2.5 font-medium text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground",
-                    active && "bg-muted text-foreground",
-                  )}
-                  href={item.href as Route}
-                  key={item.href}
-                  onClick={onNavigate}
-                >
-                  <span
-                    className={cn(
-                      "grid size-7 shrink-0 place-items-center rounded-md transition-colors",
-                      active
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-background text-muted-foreground ring-1 ring-border group-hover:text-foreground",
-                    )}
-                  >
-                    <HugeiconsIcon className="size-4" icon={item.icon} />
-                  </span>
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-    </nav>
-  );
-}
-
-function WorkspaceSwitcher({ onNavigate }: { onNavigate?: () => void }) {
+function WorkspaceSwitcher() {
   const router = useRouter();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   return (
     <OrganizationSwitcher
       align="start"
-      className="w-full"
+      className="w-full justify-start overflow-hidden group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:[&>div:first-child>div:last-child]:hidden group-data-[collapsible=icon]:[&>div:first-child]:gap-0 group-data-[collapsible=icon]:[&>svg]:hidden"
       setActive={(organization) => {
-        onNavigate?.();
+        if (isMobile) setOpenMobile(false);
         router.push(
-          (organization
-            ? `/dashboard/organizations/${organization.slug}/settings`
-            : "/dashboard") as Route,
+          organization ? `/dashboard/organizations/${organization.slug}/settings` : "/dashboard",
         );
       }}
       side="right"
@@ -229,56 +90,107 @@ function WorkspaceSwitcher({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function SidebarContent({
-  pathname,
-  navigation,
-  workspaceLabel,
-  onNavigate,
-}: {
-  pathname: string;
-  navigation: Array<{ label: string; items: NavigationItem[] }>;
-  workspaceLabel: string;
-  onNavigate?: () => void;
-}) {
+function AdministrationHeader() {
+  return (
+    <div className="flex h-10 items-center gap-3 rounded-md border bg-card px-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0">
+      <span className="grid size-7 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground">
+        <HugeiconsIcon className="size-4" icon={Shield01Icon} />
+      </span>
+      <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+        <p className="truncate font-semibold text-sm">Administration</p>
+        <p className="truncate text-muted-foreground text-xs">BedrockNexus Plugins</p>
+      </div>
+    </div>
+  );
+}
+
+function ProjectNavigation({ draftId }: { draftId: string }) {
+  const baseUrl = `/dashboard/projects/${encodeURIComponent(draftId)}`;
   return (
     <>
-      <div className="p-3">
-        {workspaceLabel === "Administration" ? (
-          <div className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-xs">
-            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <HugeiconsIcon className="size-4" icon={Shield01Icon} />
-            </span>
-            <div className="min-w-0">
-              <p className="truncate font-semibold text-sm">{workspaceLabel}</p>
-              <p className="truncate text-muted-foreground text-xs">BedrockNexus Plugins</p>
-            </div>
-          </div>
-        ) : (
-          <WorkspaceSwitcher onNavigate={onNavigate} />
-        )}
-      </div>
-      <Separator className="mb-4" />
-      <DashboardNavigation navigation={navigation} pathname={pathname} onNavigate={onNavigate} />
-      <div className="border-t p-3">
-        <Link
-          className="flex h-10 items-center gap-3 rounded-lg px-2.5 font-medium text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground"
-          href="/"
-          onClick={onNavigate}
-        >
-          <HugeiconsIcon className="size-4" icon={ArrowLeft01Icon} />
-          Back to website
-        </Link>
-      </div>
+      <SidebarNav
+        groupLabel="Project"
+        items={[{ title: "Back to projects", url: "/dashboard/projects", icon: ArrowLeft01Icon }]}
+      />
+      <SidebarNav
+        groupLabel="Manage"
+        items={[
+          { title: "Overview", url: baseUrl, icon: Package01Icon, exactMatch: true },
+          { title: "Releases", url: `${baseUrl}/releases`, icon: Clock01Icon },
+          { title: "Workflow", url: `${baseUrl}/workflow`, icon: WorkflowSquare01Icon },
+        ]}
+      />
     </>
   );
 }
 
-export function WorkspaceShell({ label, children }: { label: string; children: ReactNode }) {
+function OrganizationNavigation({ slug }: { slug: string }) {
+  const baseUrl = `/dashboard/organizations/${encodeURIComponent(slug)}`;
+  return (
+    <>
+      <SidebarNav
+        groupLabel="Organization"
+        items={[
+          {
+            title: "Back to organizations",
+            url: "/dashboard/organizations",
+            icon: ArrowLeft01Icon,
+          },
+        ]}
+      />
+      <SidebarNav
+        groupLabel="Manage"
+        items={[
+          { title: "Settings", url: `${baseUrl}/settings`, icon: Settings01Icon },
+          { title: "Members", url: `${baseUrl}/members`, icon: Building03Icon },
+        ]}
+      />
+    </>
+  );
+}
+
+function DashboardSidebar({ administration }: { administration: boolean }) {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const isAdministration = label === "Administration";
-  const navigation = isAdministration ? adminNavigation : dashboardNavigation;
-  const workspaceLabel = isAdministration ? "Administration" : "Personal workspace";
+  const projectMatch = pathname.match(/^\/dashboard\/projects\/([^/]+)/);
+  const organizationMatch = pathname.match(/^\/dashboard\/organizations\/([^/]+)/);
+  const projectId = projectMatch?.[1] === "new" ? undefined : projectMatch?.[1];
+
+  return (
+    <Sidebar className="top-16 h-[calc(100svh-4rem)]" collapsible="icon" variant="floating">
+      <SidebarHeader>
+        {administration ? <AdministrationHeader /> : <WorkspaceSwitcher />}
+      </SidebarHeader>
+      <SidebarContent>
+        {administration ? (
+          <SidebarNav groupLabel="Administration" items={adminNavigation} />
+        ) : projectId ? (
+          <ProjectNavigation draftId={decodeURIComponent(projectId)} />
+        ) : organizationMatch?.[1] ? (
+          <OrganizationNavigation slug={decodeURIComponent(organizationMatch[1])} />
+        ) : (
+          <>
+            <SidebarNav groupLabel="Dashboard" items={mainNavigation} />
+            <SidebarNav groupLabel="Manage" items={manageNavigation} />
+            <SidebarNav groupLabel="Settings" items={settingsNavigation} />
+          </>
+        )}
+      </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton render={<Link href="/" />} tooltip="Back to website">
+              <HugeiconsIcon icon={ArrowLeft01Icon} />
+              <span>Back to website</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
+
+export function WorkspaceShell({ label, children }: { label: string; children: ReactNode }) {
+  const administration = label === "Administration";
   const userButtonLinks: UserButtonLink[] = [
     {
       label: "Dashboard",
@@ -295,19 +207,10 @@ export function WorkspaceShell({ label, children }: { label: string; children: R
   ];
 
   return (
-    <div className="min-h-screen bg-muted/35">
-      <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between border-b bg-background px-4">
+    <SidebarProvider className="pt-16">
+      <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur-md lg:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <Button
-            aria-expanded={mobileOpen}
-            aria-label={mobileOpen ? "Close dashboard navigation" : "Open dashboard navigation"}
-            className="lg:hidden"
-            onClick={() => setMobileOpen((open) => !open)}
-            size="icon"
-            variant="ghost"
-          >
-            <HugeiconsIcon className="size-5" icon={mobileOpen ? Cancel01Icon : Menu01Icon} />
-          </Button>
+          <SidebarTrigger className="-ml-1" />
           <BrandMark imageClassName="w-32 sm:w-36" />
           <Separator className="hidden h-5 sm:block" orientation="vertical" />
           <span className="hidden truncate text-muted-foreground text-sm sm:block">{label}</span>
@@ -315,38 +218,12 @@ export function WorkspaceShell({ label, children }: { label: string; children: R
         <UserButton align="end" links={userButtonLinks} size="icon" />
       </header>
 
-      <aside className="fixed top-16 bottom-0 left-0 z-40 hidden w-64 flex-col border-r bg-background lg:flex">
-        <SidebarContent
-          navigation={navigation}
-          pathname={pathname}
-          workspaceLabel={workspaceLabel}
-        />
-      </aside>
-
-      {mobileOpen && (
-        <>
-          <button
-            aria-label="Close dashboard navigation"
-            className="fixed inset-0 top-16 z-30 bg-black/45 lg:hidden"
-            onClick={() => setMobileOpen(false)}
-            type="button"
-          />
-          <aside className="fixed top-16 bottom-0 left-0 z-40 flex w-72 max-w-[85vw] flex-col border-r bg-background shadow-2xl lg:hidden">
-            <SidebarContent
-              navigation={navigation}
-              pathname={pathname}
-              workspaceLabel={workspaceLabel}
-              onNavigate={() => setMobileOpen(false)}
-            />
-          </aside>
-        </>
-      )}
-
-      <div className="min-h-screen pt-16 lg:pl-64">
-        <main className="mx-auto flex w-full max-w-[96rem] flex-1 flex-col p-4 md:p-6">
+      <DashboardSidebar administration={administration} />
+      <SidebarInset>
+        <div className="mx-auto flex w-full max-w-[96rem] flex-1 flex-col p-4 md:p-6">
           {children}
-        </main>
-      </div>
-    </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

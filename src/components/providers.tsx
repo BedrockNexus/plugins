@@ -12,6 +12,7 @@ import type { ComponentPropsWithoutRef, PropsWithChildren, ReactNode } from "rea
 
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { organizationPlugin } from "@/lib/auth/organization-plugin";
 import { authClient } from "@/lib/auth-client";
 import { deleteUserPlugin } from "@/lib/delete-user-plugin";
@@ -60,37 +61,39 @@ export function Providers({
         authClient={authClient as unknown as ConvexAuthClient}
         initialToken={initialToken}
       >
-        <AuthProvider
-          authClient={authClient as unknown as AuthClient}
-          emailAndPassword={{ enabled: false }}
-          plugins={[
-            deleteUserPlugin(),
-            organizationPlugin({
-              slug: organizationSlug,
-              viewPaths: {
-                organization: {
-                  settings: "settings",
-                  people: "members",
+        <TooltipProvider>
+          <AuthProvider
+            authClient={authClient as unknown as AuthClient}
+            emailAndPassword={{ enabled: false }}
+            plugins={[
+              deleteUserPlugin(),
+              organizationPlugin({
+                slug: organizationSlug,
+                viewPaths: {
+                  organization: {
+                    settings: "settings",
+                    people: "members",
+                  },
                 },
-              },
-            }),
-          ]}
-          basePaths={{
-            auth: "/auth",
-            settings: "/dashboard/settings",
-            organization: "/dashboard/organizations",
-          }}
-          multipleAccountsPerProvider={false}
-          redirectTo="/dashboard"
-          socialProviders={["github"]}
-          navigate={({ to, replace }) =>
-            replace ? router.replace(to as Route) : router.push(to as Route)
-          }
-          Link={AuthLink}
-        >
-          {children}
-          <Toaster />
-        </AuthProvider>
+              }),
+            ]}
+            basePaths={{
+              auth: "/auth",
+              settings: "/dashboard/settings",
+              organization: "/dashboard/organizations",
+            }}
+            multipleAccountsPerProvider={false}
+            redirectTo="/dashboard"
+            socialProviders={["github"]}
+            navigate={({ to, replace }) =>
+              replace ? router.replace(to as Route) : router.push(to as Route)
+            }
+            Link={AuthLink}
+          >
+            {children}
+            <Toaster />
+          </AuthProvider>
+        </TooltipProvider>
       </ConvexBetterAuthProvider>
     </QueryClientProvider>
   );

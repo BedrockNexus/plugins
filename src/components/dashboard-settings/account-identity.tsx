@@ -33,8 +33,8 @@ export function AccountIdentity() {
             )}
           </div>
           <p className="rounded-lg border bg-muted p-3 text-muted-foreground text-xs leading-5">
-            Email, password, and recovery settings are managed by GitHub. Connected-provider access
-            can be reviewed separately in Providers.
+            Profile details, email, password, recovery, and connected-account access are managed by
+            GitHub. BedrockNexus Plugins does not maintain a separate editable identity.
           </p>
         </CardContent>
       </Card>

@@ -24,6 +24,13 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createProjectDashboardId } from "@/lib/project-dashboard-id";
 import { type ProjectMetadataInput, projectMetadataSchema } from "@/lib/publishing/metadata";
 import { cn } from "@/lib/utils";
@@ -218,23 +225,24 @@ export function AddProjectFlow() {
             </>
           ) : (
             <>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              <Select
                 disabled={Boolean(selectedDraft)}
-                onChange={(event) =>
-                  setSelectedRepositoryId(event.target.value as Id<"repositories">)
+                onValueChange={(value) =>
+                  setSelectedRepositoryId(value as Id<"repositories"> | null)
                 }
-                value={selectedRepositoryId ?? ""}
+                value={selectedRepositoryId}
               >
-                <option disabled value="">
-                  Choose a public repository
-                </option>
-                {repositories.map((repository) => (
-                  <option key={repository._id} value={repository._id}>
-                    {repository.fullName}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-10 w-full" id="publishing-repository">
+                  <SelectValue placeholder="Choose a public repository" />
+                </SelectTrigger>
+                <SelectContent>
+                  {repositories.map((repository) => (
+                    <SelectItem key={repository._id} value={repository._id}>
+                      {repository.fullName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button
                 className="w-full"
                 disabled={!selectedRepositoryId || Boolean(selectedDraft) || busyAction !== null}

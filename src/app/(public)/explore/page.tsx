@@ -9,6 +9,14 @@ import { ProjectCard } from "@/components/registry/project-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { api } from "../../../../convex/_generated/api";
 
 export const metadata: Metadata = {
@@ -90,34 +98,40 @@ export default async function ExplorePage({ searchParams }: { searchParams: Expl
                   placeholder="Search projects"
                 />
               </label>
-              <label>
-                <span className="sr-only">Server software</span>
-                <select
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  defaultValue={softwareSlug ?? ""}
-                  name="software"
-                >
-                  <option value="">All software</option>
-                  {software.map((item) => (
-                    <option key={item.slug} value={item.slug}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span className="sr-only">Sort projects</span>
-                <select
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  defaultValue={sort}
-                  name="sort"
-                >
-                  <option value="relevance">Relevance</option>
-                  <option value="latest">Latest</option>
-                  <option value="downloads">Downloads</option>
-                  <option value="rating">Rating</option>
-                </select>
-              </label>
+              <div>
+                <Label className="sr-only" htmlFor="registry-software">
+                  Server software
+                </Label>
+                <Select defaultValue={softwareSlug ?? ""} name="software">
+                  <SelectTrigger className="h-10 w-full" id="registry-software">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All software</SelectItem>
+                    {software.map((item) => (
+                      <SelectItem key={item.slug} value={item.slug}>
+                        {item.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="sr-only" htmlFor="registry-sort">
+                  Sort projects
+                </Label>
+                <Select defaultValue={sort} name="sort">
+                  <SelectTrigger className="h-10 w-full" id="registry-sort">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="relevance">Relevance</SelectItem>
+                    <SelectItem value="latest">Latest</SelectItem>
+                    <SelectItem value="downloads">Downloads</SelectItem>
+                    <SelectItem value="rating">Rating</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button type="submit">Apply</Button>
             </form>
           </search>
