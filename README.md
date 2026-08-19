@@ -40,7 +40,7 @@ Analytics and the remaining production-hardening work are tracked in
 
 ## Requirements
 
-- Node.js 20.9 or newer
+- A supported Node.js LTS release (22 or newer)
 - Bun 1.3.6
 - A standalone Convex project
 - A GitHub OAuth application
@@ -75,6 +75,7 @@ The application is available at `http://localhost:3000`.
 Detailed integration setup:
 
 - [`docs/AUTHENTICATION.md`](./docs/AUTHENTICATION.md)
+- [`docs/COOLIFY.md`](./docs/COOLIFY.md)
 - [`docs/github-app.md`](./docs/github-app.md)
 - [`docs/ENVIRONMENT.md`](./docs/ENVIRONMENT.md)
 - [`docs/adapters.md`](./docs/adapters.md)
@@ -92,6 +93,9 @@ bun run typecheck
 bun run test
 bun run build
 ```
+
+CI also builds the repository `Dockerfile`, matching the production image that
+Coolify builds after a validated change reaches `main`.
 
 `bun run build` requires valid-looking `NEXT_PUBLIC_CONVEX_URL` and
 `NEXT_PUBLIC_CONVEX_SITE_URL` values. CI supplies non-production placeholders;

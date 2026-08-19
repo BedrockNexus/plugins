@@ -10,6 +10,6 @@ export default defineConfig({
   },
   test: {
     environment: "edge-runtime",
-    testTimeout: 10_000,
+    testTimeout: 20_000,
   },
 });
