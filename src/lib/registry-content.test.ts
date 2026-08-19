@@ -6,7 +6,7 @@ describe("registry content sanitization", () => {
   it("removes executable HTML and markdown destinations", () => {
     expect(
       sanitizeRegistryText(
-        '# Plugin\n<script>alert("xss")</script>\n[Docs](https://example.com) <img src=x onerror=alert(1)>',
+        '# Plugin\n<script>alert("xss")</script >\n<style>body{display:none}</style >\n[Docs](https://example.com) <img src=x onerror=alert(1)>',
       ),
     ).toBe("Plugin\n\nDocs");
   });

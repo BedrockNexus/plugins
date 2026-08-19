@@ -9,12 +9,16 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
     env:
       NEXT_TELEMETRY_DISABLED: "1"
-      # Public, non-production placeholders used only to validate the build.
+      # Public, non-production placeholders used by tests and static checks.
       NEXT_PUBLIC_CONVEX_URL: https://ci-placeholder.convex.cloud
       NEXT_PUBLIC_CONVEX_SITE_URL: https://ci-placeholder.convex.site
     steps:
@@ -43,14 +47,3 @@ jobs:
 
       - name: Test
         run: bun run test
-
-      - name: Build application
-        run: bun run build
-
-      - name: Build production container
-        run: |
-          docker build \
-            --build-arg NEXT_PUBLIC_CONVEX_URL \
-            --build-arg NEXT_PUBLIC_CONVEX_SITE_URL \
-            --tag bedrocknexus-plugins:ci \
-            .

@@ -94,8 +94,9 @@ bun run test
 bun run build
 ```
 
-CI also builds the repository `Dockerfile`, matching the production image that
-Coolify builds after a validated change reaches `main`.
+The separate `Build and push (GHCR)` workflow builds the repository `Dockerfile`
+after changes reach `main` and publishes the image to GHCR. Coolify only pulls
+and runs the prebuilt image.
 
 `bun run build` requires valid-looking `NEXT_PUBLIC_CONVEX_URL` and
 `NEXT_PUBLIC_CONVEX_SITE_URL` values. CI supplies non-production placeholders;

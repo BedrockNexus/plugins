@@ -42,9 +42,11 @@ restores PEM line breaks before constructing the Octokit client.
 
 ## CI
 
-CI uses non-production placeholder Convex URLs so `next build` can validate the
-application without receiving deployment secrets. CI does not authenticate,
-call protected Convex functions, or produce a deployable artifact.
+CI uses non-production placeholder Convex URLs for validation and does not
+produce a deployable artifact. The separate `Build and push (GHCR)` workflow
+reads production public URLs from the GitHub `prod` environment and publishes
+the deployable image after pushes to `main` or manual workflow dispatch. Neither
+workflow authenticates to or calls protected Convex functions.
 
 ## Production
 

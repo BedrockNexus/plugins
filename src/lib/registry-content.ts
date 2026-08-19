@@ -1,13 +1,22 @@
+import { compile } from "html-to-text";
+
+const convertRegistryHtml = compile({
+  preserveNewlines: true,
+  selectors: [
+    { selector: "a", options: { ignoreHref: true } },
+    { selector: "img", format: "skip" },
+    { selector: "script", format: "skip" },
+    { selector: "style", format: "skip" },
+  ],
+  wordwrap: false,
+});
+
 export function sanitizeRegistryText(value: string | undefined, maximumLength = 8_000) {
   if (!value) {
     return undefined;
   }
 
-  const sanitized = value
-    .replace(/<!--[\s\S]*?-->/g, " ")
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]*>/g, " ")
+  const sanitized = convertRegistryHtml(value)
     .replace(/!\[[^\]]*]\([^)]*\)/g, " ")
     .replace(/\[([^\]]+)]\([^)]*\)/g, "$1")
     .replace(/```[\s\S]*?```/g, " ")
