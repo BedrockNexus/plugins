@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
-FROM oven/bun:1.3.6-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -19,7 +19,10 @@ ENV NEXT_PUBLIC_CONVEX_SITE_URL=$NEXT_PUBLIC_CONVEX_SITE_URL
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 
-RUN bun run build
+# Bun remains the package manager, but Next.js builds under its supported Node.js
+# runtime. Running `next build` through Bun 1.3.6 crashes while collecting route
+# data for /api/github/install.
+RUN node node_modules/next/dist/bin/next build
 
 FROM node:24-alpine AS runner
 
