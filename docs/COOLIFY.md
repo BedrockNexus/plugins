@@ -5,40 +5,47 @@ deployment and must be deployed independently.
 
 ## Deployment model
 
-The deployment pipeline mirrors the BedrockNexus Hub:
+The deployment pipeline is shared with the hub and api through
+[BedrockNexus/github-actions](https://github.com/BedrockNexus/github-actions):
 
-1. The `CI` workflow validates pull requests and `main`.
-2. The separate `Build and push (GHCR)` workflow runs after pushes to `main` or
-   through manual workflow dispatch.
-3. GitHub Actions builds the repository-owned `Dockerfile` and publishes the
-   image to GitHub Container Registry (GHCR).
+1. `CI` validates pull requests and `main`, and `Pull Request` builds the
+   Dockerfile `test` stage and the image without pushing.
+2. `Deploy` runs after pushes to `main` or through manual workflow dispatch.
+   The Dockerfile `test` stage must pass before the image is built.
+3. GitHub Actions publishes the image to GitHub Container Registry (GHCR) and
+   then calls the Coolify deploy webhook.
 4. Coolify pulls and runs the prebuilt image. The production server does not
    clone the repository, install dependencies, or run `next build`.
 
-The image workflow publishes these tags:
+The deploy workflow publishes these tags:
 
 ```text
 ghcr.io/bedrocknexus/plugins:latest
-ghcr.io/bedrocknexus/plugins:<full-commit-sha>
+ghcr.io/bedrocknexus/plugins:main
+ghcr.io/bedrocknexus/plugins:sha-<short-sha>
 ```
 
-The workflow intentionally does not store or call a Coolify API webhook. Image
-deployment remains configured in Coolify, matching the Hub application.
+Coolify is only called after the push succeeds. It needs the `COOLIFY_WEBHOOK`
+repository secret and the `COOLIFY_TOKEN` secret (repository or organization
+level). Disable Coolify's own Git auto-deploy so GitHub Actions is the only
+trigger.
 
 Protect `main` in GitHub and require the `CI / validate` check before merging.
 
-## GitHub production environment
+## GitHub configuration
 
-Create a GitHub Actions environment named `prod`. Add these environment
-variables to it:
+Add these **repository variables** (Settings > Secrets and variables > Actions >
+Variables). They are public and inlined into the client bundle:
 
 ```text
 NEXT_PUBLIC_CONVEX_URL
 NEXT_PUBLIC_CONVEX_SITE_URL
 ```
 
-Both values must belong to the same production Convex deployment. The image
-workflow refuses to build when either value is missing. GHCR publishing uses
+Both values must belong to the same production Convex deployment. The deploy
+workflow refuses to build when either value is missing. Add the
+`COOLIFY_WEBHOOK` repository secret and the `COOLIFY_TOKEN` secret (repository
+or organization level). GHCR publishing uses
 GitHub's short-lived `GITHUB_TOKEN`; no registry write secret is required.
 
 After the first successful push, make the GHCR container package public. A
@@ -110,11 +117,12 @@ publishing acceptance flow.
 ## First deployment verification
 
 1. Confirm the GitHub `CI / validate` check passes on the deployed commit.
-2. Confirm `Build and push (GHCR)` publishes `latest` and the commit SHA tag.
+2. Confirm `Deploy` publishes `latest` and the `sha-<short-sha>` tag, and that
+   its Coolify job succeeds.
 3. Confirm Coolify pulls the image instead of starting a build.
 4. Open `/api/health` and confirm it returns HTTP 200.
 5. Test GitHub sign-in against the production callback URL.
 6. Test one GitHub App installation and webhook delivery.
 7. Complete the real download-redirect QA tracked in `TODO.md`.
-8. Test rollback by selecting the previous commit SHA image tag in Coolify and
-   redeploying it.
+8. Test rollback by selecting the previous `sha-<short-sha>` image tag in
+   Coolify and redeploying it.

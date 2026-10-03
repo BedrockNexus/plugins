@@ -3,20 +3,13 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { fetchQuery } from "convex/nextjs";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { EmptyState } from "@/components/empty-state";
-import { PageShell } from "@/components/page-shell";
-import { ProjectCard } from "@/components/registry/project-card";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { ProjectList } from "@/components/registry/project-card";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { formatCompactNumber } from "@/lib/format-registry";
+import { cn } from "@/lib/utils";
 import { api } from "../../../../convex/_generated/api";
 
 export const metadata: Metadata = {
@@ -26,10 +19,72 @@ export const metadata: Metadata = {
 };
 
 type ExploreSearchParams = Promise<Record<string, string | string[] | undefined>>;
-type RegistrySort = "relevance" | "latest" | "downloads" | "rating";
+type RegistrySort = "relevance" | "latest" | "downloads";
+
+const sortOptions: ReadonlyArray<{ value: Exclude<RegistrySort, "relevance">; label: string }> = [
+  { value: "latest", label: "Recently updated" },
+  { value: "downloads", label: "Most downloaded" },
+];
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function exploreHref(params: { q?: string; software?: string; sort?: RegistrySort }) {
+  const query = new URLSearchParams();
+  if (params.q) query.set("q", params.q);
+  if (params.software) query.set("software", params.software);
+  if (params.sort && params.sort !== "latest" && params.sort !== "relevance") {
+    query.set("sort", params.sort);
+  }
+  const serialized = query.toString();
+  return (serialized ? `/explore?${serialized}` : "/explore") as Route;
+}
+
+function FilterGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div>
+      <h2 className="mb-2.5 px-2 font-bold font-display text-[13px] text-muted-foreground uppercase tracking-[0.1em]">
+        {title}
+      </h2>
+      <ul className="flex flex-wrap gap-1.5 lg:flex-col lg:gap-0.5">{children}</ul>
+    </div>
+  );
+}
+
+function FilterLink({
+  href,
+  active,
+  children,
+  count,
+}: {
+  href: Route;
+  active: boolean;
+  children: ReactNode;
+  count?: number;
+}) {
+  return (
+    <li>
+      <Link
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "flex items-center justify-between gap-3 rounded-md border px-3 py-1.5 text-sm transition-colors hover:bg-muted lg:border-transparent lg:px-2",
+          active &&
+            "border-primary bg-primary text-primary-foreground hover:bg-primary lg:border-primary",
+        )}
+        href={href}
+      >
+        <span className="truncate">{children}</span>
+        {count !== undefined ? (
+          <span
+            className={cn("font-mono text-xs", active ? "opacity-80" : "text-muted-foreground")}
+          >
+            {formatCompactNumber(count)}
+          </span>
+        ) : null}
+      </Link>
+    </li>
+  );
 }
 
 export default async function ExplorePage({ searchParams }: { searchParams: ExploreSearchParams }) {
@@ -44,12 +99,12 @@ export default async function ExplorePage({ searchParams }: { searchParams: Expl
     : undefined;
   const sort: RegistrySort = search
     ? "relevance"
-    : ["latest", "downloads", "rating"].includes(requestedSort ?? "")
-      ? (requestedSort as RegistrySort)
+    : requestedSort === "downloads"
+      ? "downloads"
       : "latest";
 
   const queryArgs = {
-    paginationOpts: { numItems: 12, cursor },
+    paginationOpts: { numItems: 20, cursor },
     search,
     softwareSlug,
     sort,
@@ -69,102 +124,153 @@ export default async function ExplorePage({ searchParams }: { searchParams: Expl
   const nextParams = new URLSearchParams();
   if (search) nextParams.set("q", search);
   if (softwareSlug) nextParams.set("software", softwareSlug);
-  nextParams.set("sort", sort);
+  if (sort === "downloads") nextParams.set("sort", sort);
   if (!result.isDone) nextParams.set("cursor", result.continueCursor);
 
+  const totalCount = software.reduce((total, item) => total + item.projectCount, 0);
+  const activeSoftware = software.find((item) => item.slug === softwareSlug);
+
   return (
-    <PageShell
-      eyebrow="Public registry"
-      title="Explore Bedrock projects"
-      description="Search, filter, and sort published plugins across supported server software."
-    >
-      <Card className="mb-8 shadow-none">
-        <CardContent>
-          <search>
-            <form className="grid gap-3 lg:grid-cols-[1fr_13rem_11rem_auto]">
-              <label className="relative min-w-0" htmlFor="registry-search">
+    <main className="flex w-full flex-1 flex-col">
+      <header className="border-b bg-surface-sunken">
+        <div className="container mx-auto flex flex-col gap-4.5 px-4 pt-10 pb-8 md:px-6">
+          <h1 className="font-bold text-[clamp(2rem,4vw,3rem)] leading-none">
+            {activeSoftware ? `${activeSoftware.name} plugins` : "Plugins"}
+          </h1>
+          <search className="block max-w-3xl">
+            <form className="flex flex-wrap gap-2.5">
+              {softwareSlug ? <input name="software" type="hidden" value={softwareSlug} /> : null}
+              <label className="relative min-w-0 flex-1" htmlFor="registry-search">
                 <HugeiconsIcon
                   icon={Search01Icon}
-                  className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
                   aria-hidden="true"
                 />
-                <span className="sr-only">Search the registry</span>
+                <span className="sr-only">Search plugins</span>
                 <Input
-                  className="pl-9"
+                  className="h-12 bg-card pl-9 text-base"
                   defaultValue={search}
                   id="registry-search"
                   name="q"
                   type="search"
-                  placeholder="Search projects"
+                  placeholder={
+                    activeSoftware ? `Search ${activeSoftware.name} plugins` : "Search plugins"
+                  }
                 />
               </label>
-              <div>
-                <Label className="sr-only" htmlFor="registry-software">
-                  Server software
-                </Label>
-                <Select defaultValue={softwareSlug ?? ""} name="software">
-                  <SelectTrigger className="h-10 w-full" id="registry-software">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All software</SelectItem>
-                    {software.map((item) => (
-                      <SelectItem key={item.slug} value={item.slug}>
-                        {item.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="sr-only" htmlFor="registry-sort">
-                  Sort projects
-                </Label>
-                <Select defaultValue={sort} name="sort">
-                  <SelectTrigger className="h-10 w-full" id="registry-sort">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="relevance">Relevance</SelectItem>
-                    <SelectItem value="latest">Latest</SelectItem>
-                    <SelectItem value="downloads">Downloads</SelectItem>
-                    <SelectItem value="rating">Rating</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="submit">Apply</Button>
+              <Button size="xl" type="submit" variant="brand">
+                Search
+              </Button>
             </form>
           </search>
-        </CardContent>
-      </Card>
-
-      {result.page.length > 0 ? (
-        <>
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {result.page.map((project) => (
-              <ProjectCard key={project.projectId} project={project} />
+        </div>
+      </header>
+      <div className="container mx-auto grid w-full gap-6 px-4 pt-7 pb-16 md:px-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
+        <aside
+          aria-label="Filters"
+          className="flex flex-col gap-5 self-start rounded-md border bg-card p-5 lg:sticky lg:top-24"
+        >
+          <FilterGroup title="Software">
+            <FilterLink
+              active={!softwareSlug}
+              count={totalCount}
+              href={exploreHref({ q: search, sort })}
+            >
+              All software
+            </FilterLink>
+            {software.map((item) => (
+              <FilterLink
+                active={item.slug === softwareSlug}
+                count={item.projectCount}
+                href={exploreHref({ q: search, software: item.slug, sort })}
+                key={item.slug}
+              >
+                {item.name}
+              </FilterLink>
             ))}
-          </div>
-          {!result.isDone && (
-            <div className="mt-8 flex justify-center">
-              <Link href={`/explore?${nextParams.toString()}` as Route}>
-                <Button variant="outline">Next page</Button>
-              </Link>
-            </div>
+          </FilterGroup>
+
+          {search ? null : (
+            <FilterGroup title="Sort">
+              {sortOptions.map((option) => (
+                <FilterLink
+                  active={sort === option.value}
+                  href={exploreHref({ software: softwareSlug, sort: option.value })}
+                  key={option.value}
+                >
+                  {option.label}
+                </FilterLink>
+              ))}
+            </FilterGroup>
           )}
-        </>
-      ) : (
-        <EmptyState
-          icon={SearchMinusIcon}
-          title="No projects matched"
-          description="Try a broader search or a different server software filter. Newly published projects appear here automatically."
-          action={
-            <Link href="/explore">
-              <Button variant="outline">Clear filters</Button>
-            </Link>
-          }
-        />
-      )}
-    </PageShell>
+        </aside>
+        <div className="flex min-w-0 flex-col gap-3.5">
+          <p className="text-muted-foreground">
+            {search ? (
+              <>
+                Results for <span className="font-medium text-foreground">"{search}"</span>,{" "}
+                <Link
+                  className="underline-offset-4 hover:underline"
+                  href={exploreHref({ software: softwareSlug })}
+                >
+                  Clear search
+                </Link>
+              </>
+            ) : sort === "downloads" ? (
+              "Sorted by downloads"
+            ) : (
+              "Sorted by most recently updated"
+            )}
+          </p>
+
+          {result.page.length > 0 ? (
+            <>
+              <ProjectList projects={result.page} />
+              {cursor || !result.isDone ? (
+                <div className="mt-6 flex justify-center gap-2">
+                  {cursor ? (
+                    <Link
+                      className={buttonVariants({ variant: "ghost" })}
+                      href={exploreHref({ q: search, software: softwareSlug, sort })}
+                    >
+                      First page
+                    </Link>
+                  ) : null}
+                  {!result.isDone ? (
+                    <Link
+                      className={buttonVariants({ variant: "outline" })}
+                      href={`/explore?${nextParams.toString()}` as Route}
+                    >
+                      Next page
+                    </Link>
+                  ) : null}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <EmptyState
+              icon={SearchMinusIcon}
+              title={search || softwareSlug ? "No plugins matched" : "No plugins published yet"}
+              description={
+                search || softwareSlug
+                  ? "Try a broader search or a different server software. Newly published plugins appear here automatically."
+                  : "Reviewed releases appear here as soon as they are approved."
+              }
+              action={
+                search || softwareSlug ? (
+                  <Link className={buttonVariants({ variant: "outline" })} href="/explore">
+                    Clear filters
+                  </Link>
+                ) : (
+                  <Link className={buttonVariants()} href="/dashboard/projects/new">
+                    Publish a plugin
+                  </Link>
+                )
+              }
+            />
+          )}
+        </div>
+      </div>
+    </main>
   );
 }

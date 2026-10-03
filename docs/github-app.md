@@ -79,3 +79,28 @@ After configuring the App, test with a public repository selected explicitly.
 Confirm the repository appears at `/dashboard/projects`, a forged webhook
 returns `401`, a duplicate returns `202` without reprocessing, and the delivery
 history appears at `/admin/deliveries` for moderators and administrators.
+
+## Traceable builds
+
+A release earns the "Traceable build" badge only when GitHub's own records tie
+its primary asset to a successful run of the exact managed workflow. The rules
+live in `convex/lib/buildProvenance.ts`:
+
+| Check | Evidence from GitHub |
+| --- | --- |
+| Workflow not edited | The git blob SHA of `.github/workflows/bedrocknexus-publish.yml` at the tagged commit equals the blob BedrockNexus installed (`publishingDrafts.workflowBlobSha`). |
+| Successful tag build | The managed workflow's run for that tag and commit completed with `success`. |
+| Built by the workflow | The GitHub Release and its asset were created by `github-actions[bot]`, which is the identity of the workflow's `gh release create` step. |
+| Not replaced later | The asset was uploaded between the run's start and completion (two minutes of slack). Replacing an asset creates a new one with a later timestamp. |
+
+When a release fails, `releases.verificationFailure` records the first failed
+check. The asset's GitHub `digest` is stored on `releaseAssets` for future
+integrity checks.
+
+Remaining gap: another workflow in the same repository that also uses
+`GITHUB_TOKEN` could upload an asset during the same run window. Closing it
+fully requires GitHub artifact attestations (`actions/attest-build-provenance`)
+in the managed templates, plus Sigstore verification of the attestation.
+
+"Traceable" describes build provenance. It is not a malware or security
+review of the plugin's code.

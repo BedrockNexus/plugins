@@ -17,6 +17,7 @@ import { sanitizeReadmeExcerpt, slugifyProjectName } from "../../../../src/lib/p
 import { internal } from "../../../_generated/api";
 import type { Doc, Id } from "../../../_generated/dataModel";
 import { type ActionCtx, action, env } from "../../../_generated/server";
+import { enforceRateLimit } from "../../../lib/rateLimits";
 import { createGitHubApp, requireGitHubAppConfig, throwGitHubApiError } from "../../github/lib/app";
 
 const adapterIdValidator = v.union(v.literal("pocketmine-mp"), v.literal("powernukkitx"));
@@ -201,6 +202,7 @@ export const analyzeRepository = action({
   }> => {
     const identity = await ctx.auth.getUserIdentity();
     const tokenIdentifier = requireTokenIdentifier(identity);
+    await enforceRateLimit(ctx, "githubRead", tokenIdentifier);
     const access: {
       installationId: number;
       repositoryId: Id<"repositories">;
@@ -274,6 +276,7 @@ export const installWorkflow = action({
   }> => {
     const identity = await ctx.auth.getUserIdentity();
     const tokenIdentifier = requireTokenIdentifier(identity);
+    await enforceRateLimit(ctx, "workflowInstall", tokenIdentifier);
     const context: PublishingActionContext = await ctx.runQuery(
       internal.functions.projects.publishing.model.getActionContext,
       {
@@ -344,12 +347,29 @@ export const installWorkflow = action({
       }
 
       if (existing?.content === generated.content) {
-        const commitSha = context.draft.workflowCommitSha ?? existing.sha;
+        let commitSha = context.draft.workflowCommitSha;
+        if (!commitSha) {
+          const commits = await octokit.rest.repos.listCommits({
+            owner: context.repository.ownerLogin,
+            repo: context.repository.name,
+            sha: context.repository.defaultBranch,
+            path: generated.path,
+            per_page: 1,
+          });
+          commitSha = commits.data[0]?.sha;
+        }
+        if (!commitSha) {
+          throw new ConvexError({
+            code: "WORKFLOW_COMMIT_MISSING",
+            message: "GitHub did not return the commit that installed the workflow.",
+          });
+        }
         await ctx.runMutation(internal.functions.projects.publishing.model.recordWorkflowCommit, {
           tokenIdentifier,
           draftId: args.draftId,
           branch: context.repository.defaultBranch,
           commitSha,
+          workflowBlobSha: existing.sha,
           templateKey,
           templateVersion,
         });
@@ -373,7 +393,8 @@ export const installWorkflow = action({
         ...(existing ? { sha: existing.sha } : {}),
       });
       const commitSha = commit.data.commit.sha;
-      if (!commitSha) {
+      const workflowBlobSha = commit.data.content?.sha;
+      if (!commitSha || !workflowBlobSha) {
         throw new ConvexError({
           code: "WORKFLOW_COMMIT_MISSING",
           message: "GitHub created the workflow file without returning a commit SHA.",
@@ -384,6 +405,7 @@ export const installWorkflow = action({
         draftId: args.draftId,
         branch: context.repository.defaultBranch,
         commitSha,
+        workflowBlobSha,
         templateKey,
         templateVersion,
       });
@@ -464,6 +486,30 @@ async function refreshState(
       workflowRuns = runs.data.workflow_runs;
     }
 
+    const workflowBlobShaByCommit = new Map<string, string | undefined>();
+    const workflowBlobShaAt = async (ref: string) => {
+      if (workflowBlobShaByCommit.has(ref)) {
+        return workflowBlobShaByCommit.get(ref);
+      }
+      let blobSha: string | undefined;
+      try {
+        const file = await octokit.rest.repos.getContent({
+          owner: context.repository.ownerLogin,
+          repo: context.repository.name,
+          path: workflowPath,
+          ref,
+        });
+        blobSha =
+          !Array.isArray(file.data) && file.data.type === "file" ? file.data.sha : undefined;
+      } catch (error) {
+        if (!isGitHubStatus(error, 404)) {
+          throw error;
+        }
+      }
+      workflowBlobShaByCommit.set(ref, blobSha);
+      return blobSha;
+    };
+
     const detectedReleases: Array<{
       id: number;
       url: string;
@@ -477,6 +523,13 @@ async function refreshState(
         url: string;
         size: number;
         contentType?: string;
+        digest?: string;
+      };
+      provenance: {
+        releaseAuthor?: string;
+        assetUploader?: string;
+        assetCreatedAt?: number;
+        workflowBlobShaAtCommit?: string;
       };
     }> = [];
     const githubReleases = await octokit.rest.repos.listReleases({
@@ -496,6 +549,9 @@ async function refreshState(
         repo: context.repository.name,
         ref: candidate.tag_name,
       });
+      const assetDigest = (asset as { digest?: string | null }).digest ?? undefined;
+      const assetCreatedAt = parseTimestamp(asset.created_at);
+      const workflowBlobShaAtCommit = await workflowBlobShaAt(commit.data.sha);
       detectedReleases.push({
         id: candidate.id,
         url: candidate.html_url,
@@ -511,6 +567,13 @@ async function refreshState(
           url: asset.browser_download_url,
           size: asset.size,
           ...(asset.content_type ? { contentType: asset.content_type } : {}),
+          ...(assetDigest ? { digest: assetDigest } : {}),
+        },
+        provenance: {
+          ...(candidate.author?.login ? { releaseAuthor: candidate.author.login } : {}),
+          ...(asset.uploader?.login ? { assetUploader: asset.uploader.login } : {}),
+          ...(assetCreatedAt ? { assetCreatedAt } : {}),
+          ...(workflowBlobShaAtCommit ? { workflowBlobShaAtCommit } : {}),
         },
       });
     }
@@ -534,6 +597,9 @@ async function refreshState(
             commitSha: selectedRun.head_sha,
             ...(selectedRun.head_branch?.startsWith("v") ? { tag: selectedRun.head_branch } : {}),
             createdAt: parseTimestamp(selectedRun.created_at) ?? Date.now(),
+            ...(parseTimestamp(selectedRun.run_started_at)
+              ? { startedAt: parseTimestamp(selectedRun.run_started_at) }
+              : {}),
             ...(parseTimestamp(selectedRun.updated_at)
               ? { completedAt: parseTimestamp(selectedRun.updated_at) }
               : {}),
@@ -573,6 +639,8 @@ export const refreshPublishingState = action({
   }),
   handler: async (ctx, args): Promise<PublishingRefreshResult> => {
     const identity = await ctx.auth.getUserIdentity();
-    return await refreshState(ctx, requireTokenIdentifier(identity), args.draftId);
+    const tokenIdentifier = requireTokenIdentifier(identity);
+    await enforceRateLimit(ctx, "githubRead", tokenIdentifier);
+    return await refreshState(ctx, tokenIdentifier, args.draftId);
   },
 });

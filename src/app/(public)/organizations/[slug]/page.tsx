@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EmptyState } from "@/components/empty-state";
 import { PageShell } from "@/components/page-shell";
-import { ProjectCard } from "@/components/registry/project-card";
+import { ProjectList } from "@/components/registry/project-card";
 import { RegistryMetric, RegistrySection } from "@/components/registry/registry-section";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -68,11 +68,7 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
 
       <RegistrySection title="Published projects">
         {result.projects.length > 0 ? (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {result.projects.map((project) => (
-              <ProjectCard key={project.projectId} project={project} />
-            ))}
-          </div>
+          <ProjectList projects={result.projects} />
         ) : (
           <EmptyState
             icon={Package01Icon}

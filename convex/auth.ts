@@ -9,6 +9,7 @@ import { components, internal } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import authConfig from "./auth.config";
 import authSchema from "./betterAuth/schema";
+import { AUTH_CLIENT_IP_HEADER } from "./lib/authProxy";
 
 export const authComponent = createClient<DataModel, typeof authSchema>(components.betterAuth, {
   local: {
@@ -85,6 +86,32 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) =>
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: false,
+    },
+    // Counters live in the database because Convex functions do not share
+    // memory. Better Auth adds built-in limits for /sign-in/* (3 per 10s).
+    rateLimit: {
+      enabled: true,
+      storage: "database",
+      window: 60,
+      max: 100,
+      customRules: {
+        "/sign-in/*": { window: 60, max: 10 },
+        "/delete-user": { window: 60 * 60, max: 3 },
+        // Session reads happen on every server render and only work with a
+        // valid session cookie.
+        "/get-session": false,
+        "/convex/token": false,
+        // Convex fetches these server-to-server to verify every token; a
+        // 429 here signs everyone out of Convex queries.
+        "/convex/jwks": false,
+        "/convex/.well-known/openid-configuration": false,
+      },
+    },
+    advanced: {
+      // Only the address vouched for by the Next.js proxy (convex/http.ts).
+      ipAddress: {
+        ipAddressHeaders: [AUTH_CLIENT_IP_HEADER],
+      },
     },
     hooks: {
       before: createAuthMiddleware(async (request) => {

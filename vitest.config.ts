@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   resolve: {
@@ -11,5 +11,7 @@ export default defineConfig({
   test: {
     environment: "edge-runtime",
     testTimeout: 20_000,
+    // Browser end-to-end tests run with Playwright (`bun run test:e2e`).
+    exclude: [...configDefaults.exclude, "e2e/**"],
   },
 });

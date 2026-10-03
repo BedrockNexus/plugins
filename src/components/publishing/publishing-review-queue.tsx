@@ -67,7 +67,7 @@ export function PublishingReviewQueue() {
     return (
       <Card className="border-dashed shadow-none">
         <CardContent className="flex min-h-64 flex-col items-center justify-center p-8 text-center">
-          <span className="grid size-14 place-items-center rounded-xl bg-primary text-primary-foreground">
+          <span className="grid size-14 place-items-center rounded-md bg-primary text-primary-foreground">
             <HugeiconsIcon className="size-6" icon={CheckmarkCircle02Icon} />
           </span>
           <h2 className="mt-5 font-semibold text-lg">Review queue is clear</h2>
@@ -99,7 +99,7 @@ export function PublishingReviewQueue() {
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-lg border p-3">
+                <div className="rounded-md border p-3">
                   <p className="text-muted-foreground text-xs">Repository</p>
                   <a
                     className="mt-1 flex items-center gap-1.5 font-medium hover:text-primary"
@@ -111,11 +111,11 @@ export function PublishingReviewQueue() {
                     {repository.fullName}
                   </a>
                 </div>
-                <div className="rounded-lg border p-3">
+                <div className="rounded-md border p-3">
                   <p className="text-muted-foreground text-xs">Adapter</p>
                   <p className="mt-1 font-medium">{draft.adapterId}</p>
                 </div>
-                <div className="rounded-lg border p-3">
+                <div className="rounded-md border p-3">
                   <p className="text-muted-foreground text-xs">Release</p>
                   {draft.latestReleaseUrl ? (
                     <a
@@ -130,7 +130,7 @@ export function PublishingReviewQueue() {
                     <p className="mt-1 font-medium">{draft.latestTag}</p>
                   )}
                 </div>
-                <div className="rounded-lg border p-3">
+                <div className="rounded-md border p-3">
                   <p className="text-muted-foreground text-xs">Primary asset</p>
                   <p className="mt-1 flex items-center gap-1.5 font-medium">
                     <HugeiconsIcon className="size-4" icon={Package01Icon} />

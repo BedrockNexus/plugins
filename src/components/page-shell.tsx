@@ -18,24 +18,22 @@ export function PageShell({
   className?: string;
 }) {
   return (
-    <main className={cn("container mx-auto w-full flex-1 px-4 py-12 md:px-6 sm:py-16", className)}>
-      <header className="relative flex flex-col gap-7 overflow-hidden border-b pb-10 md:flex-row md:items-end md:justify-between">
-        <div className="site-grid pointer-events-none absolute inset-0 -z-10 opacity-60" />
-        <div className="max-w-3xl">
-          {eyebrow && (
-            <p className="mb-4 flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em]">
-              <span className="size-2 bg-primary" />
-              {eyebrow}
-            </p>
-          )}
-          <h1 className="text-balance font-bold text-4xl tracking-[-0.035em] md:text-5xl">
-            {title}
-          </h1>
-          <p className="mt-3 max-w-2xl text-base text-muted-foreground leading-7">{description}</p>
+    <main className="flex w-full flex-1 flex-col">
+      <header className="border-b bg-surface-sunken">
+        <div className="container mx-auto flex flex-col gap-4 px-4 pt-10 pb-8 md:flex-row md:items-end md:justify-between md:px-6">
+          <div className="max-w-3xl">
+            {eyebrow && <p className="eyebrow mb-3">{eyebrow}</p>}
+            <h1 className="text-balance font-bold text-[clamp(2rem,4vw,3rem)] leading-none">
+              {title}
+            </h1>
+            <p className="mt-3 max-w-2xl text-[17px] text-muted-foreground">{description}</p>
+          </div>
+          {actions}
         </div>
-        {actions}
       </header>
-      <div className="py-10 sm:py-12">{children}</div>
+      <div className={cn("container mx-auto w-full px-4 pt-8 pb-16 md:px-6", className)}>
+        {children}
+      </div>
     </main>
   );
 }

@@ -64,7 +64,7 @@ const lightTheme = EditorView.theme({
   },
   ".cm-content": {
     caretColor: "var(--foreground)",
-    fontFamily: "var(--font-geist-mono), monospace",
+    fontFamily: "var(--font-mono-family), monospace",
     lineHeight: "1.25rem",
     padding: "0.75rem 0",
   },
@@ -113,7 +113,7 @@ export function YamlWorkflowEditor({
   return (
     <fieldset
       aria-labelledby={labelledBy}
-      className={cn("overflow-hidden rounded-lg border bg-background", className)}
+      className={cn("overflow-hidden rounded-md border bg-background", className)}
       disabled={disabled}
     >
       <CodeMirror

@@ -23,10 +23,12 @@ an earlier phase has unresolved acceptance criteria.
   subscriptions. Use Octokit for installation tokens and GitHub API calls.
 - [x] Use GitHub Actions for builds and GitHub Releases for permanent assets.
   Never execute repository code on the BedrockNexus Plugins server.
-- [x] Use OpenPanel for product analytics while Convex remains authoritative for
+- [ ] Product analytics are deferred until the central Amblydia analytics
+  platform exists. Convex remains authoritative for
   downloads, builds, releases, permissions, and moderation.
-- [x] Deploy the Next.js application on Vercel for the MVP and Convex separately.
-  Point `plugins.bedrocknexus.com` at the Vercel deployment after staging passes.
+- [x] Build the Next.js image in GitHub Actions, publish it to GHCR, and run it
+  on Coolify; deploy Convex separately. Point `plugins.bedrocknexus.com` at the
+  Coolify deployment after staging passes. See `docs/COOLIFY.md`.
 - [x] Use GitHub-derived project imagery during the MVP. Do not add general file
   uploads or a second blob store while the product forbids manual artifacts.
 
@@ -379,15 +381,17 @@ Implementation validation:
   release, and confirm one real browser download redirect increments the count
   exactly once.
 
-## Phase 8 — Analytics and moderation
+## Phase 8 — Moderation
 
-- [ ] Integrate the official OpenPanel Next.js SDK.
-- [ ] Define a typed event catalog and shared event-property schemas.
-- [ ] Track the publishing funnel, project views, downloads, GitHub connections,
-  workflow outcomes, release detection, publication, and support links.
-- [ ] Do not duplicate OpenPanel event streams into Convex.
-- [ ] Build reports, pending review, hidden/suspended projects, failed builds,
-  failed webhook deliveries, suspicious downloads, and moderation history.
+Product analytics (event catalog, funnel tracking, dashboards) are deferred
+until the central Amblydia analytics platform exists. The placeholder
+`/dashboard/analytics`, `/admin/reports`, and `/admin/history` screens were
+removed; rebuild them only on live data.
+
+- [ ] Build reports, hidden/suspended projects, failed builds, suspicious
+  downloads, and moderation history on live Convex data.
+- [x] Show failed webhook deliveries on the live admin overview and
+  `/admin/deliveries`.
 - [x] Build the live pending publishing-review queue with exact release details
   and server-authorized approval decisions.
 - [x] Add immutable admin-action audit records for publishing review decisions.
@@ -395,23 +399,32 @@ Implementation validation:
 
 Acceptance:
 
-- Funnel events appear in OpenPanel without exposing secrets or private data.
 - Moderator/admin actions are enforced server-side and auditable.
 
 ## Phase 10 — Production readiness
 
-- [ ] Add security headers, CSP, secret-rotation documentation, and structured
-  server logs with sensitive-value redaction.
-- [ ] Add rate limits to auth-adjacent, GitHub callback, webhook, report, review,
-  and download routes.
-- [ ] Add end-to-end tests for authentication, GitHub installation, publishing,
-  verified release correlation, download, and moderation.
+- [x] Add security headers, a baseline CSP, secret-rotation documentation
+  (`docs/OPERATIONS.md`), and structured JSON server logs with redaction of
+  tokens, keys, and sensitive fields (`convex/lib/redact.ts`).
+- [x] Restrict `script-src` with per-request CSP nonces (`src/proxy.ts`).
+- [x] Add rate limits (`convex/lib/rateLimits.ts`) to sign-in (database-backed
+  Better Auth limits keyed by the proxy-verified client address), GitHub
+  installation and callbacks, GitHub refreshes, workflow installs, publishing
+  edits and submissions, moderation decisions, forged webhooks, and downloads.
+  Reports do not exist yet.
+- [x] Add end-to-end tests: Playwright suites for public pages, access control,
+  404s, headers, and downloads (`bun run test:e2e`), signed-in suites driven by
+  recorded sessions, and a Convex journey test from verified release through
+  moderation to a counted download.
 - [x] Add dependency and code scanning in CI.
-- [ ] Create staging and production Convex deployments and GitHub Apps.
-- [ ] Deploy staging on Vercel and run the full acceptance flow.
+- [x] Let owners delete their own projects so account deletion is fully
+  self-service (see `docs/OPERATIONS.md`, Data deletion).
+- [ ] Create staging and production Convex deployments and GitHub Apps
+  (`docs/STAGING.md`).
+- [ ] Deploy staging on Coolify and run the full acceptance flow.
 - [ ] Configure `plugins.bedrocknexus.com` only after staging sign-off.
-- [ ] Document incident response, webhook replay, data deletion, backups/export,
-  and rollback procedures.
+- [x] Document incident response, webhook replay, data deletion, backups/export,
+  and rollback procedures (`docs/OPERATIONS.md`).
 
 ## Explicit non-goals for the MVP
 

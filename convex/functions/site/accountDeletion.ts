@@ -62,7 +62,7 @@ export const prepare = internalMutation({
   },
   returns: v.union(v.null(), v.string()),
   handler: async (ctx, args) => {
-    const [ownedProject, ownedDraft, ownedInstallation, creatorProfile, organizationOwner] =
+    const [ownedProject, ownedDraft, ownedInstallations, creatorProfile, organizationOwner] =
       await Promise.all([
         ctx.db
           .query("projects")
@@ -81,7 +81,7 @@ export const prepare = internalMutation({
           .withIndex("by_owner_type_and_owner_id", (query) =>
             query.eq("ownerType", "user").eq("ownerId", args.userId),
           )
-          .first(),
+          .take(20),
         ctx.db
           .query("creatorProfiles")
           .withIndex("by_user_id", (query) => query.eq("userId", args.userId))
@@ -97,8 +97,8 @@ export const prepare = internalMutation({
       return "Transfer or remove your personal projects before deleting your account.";
     }
 
-    if (ownedInstallation) {
-      return "Disconnect your personal GitHub App installation before deleting your account.";
+    if (ownedInstallations.some((installation) => installation.status !== "deleted")) {
+      return "Uninstall the BedrockNexus Plugins GitHub App from your personal account before deleting your account.";
     }
 
     if (creatorProfile) {
@@ -114,6 +114,17 @@ export const prepare = internalMutation({
       }
     }
 
+    // Uninstalled installations only keep public repository metadata.
+    for (const installation of ownedInstallations) {
+      const repositories = await ctx.db
+        .query("repositories")
+        .withIndex("by_installation_id", (query) => query.eq("installationId", installation._id))
+        .take(200);
+      for (const repository of repositories) {
+        await ctx.db.delete("repositories", repository._id);
+      }
+      await ctx.db.delete("githubInstallations", installation._id);
+    }
     await removeOrganizationMemberships(ctx, args.userId);
 
     if (creatorProfile) {

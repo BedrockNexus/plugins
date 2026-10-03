@@ -1,27 +1,22 @@
-import { viewPaths } from "@better-auth-ui/core";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 
 import { Auth } from "@/components/auth/auth";
 import { BrandMark } from "@/components/brand-mark";
+import { isAuthenticated } from "@/lib/auth-server";
 
 export const metadata: Metadata = {
-  title: "Sign in",
+  title: "Login",
   robots: { index: false, follow: false },
 };
 
-const enabledAuthPaths = [viewPaths.auth.signIn, viewPaths.auth.signOut] as string[];
-
-export default async function AuthPage({ params }: { params: Promise<{ path: string }> }) {
-  const { path } = await params;
-
-  if (!enabledAuthPaths.includes(path)) {
-    notFound();
+export default async function LoginPage() {
+  if (await isAuthenticated()) {
+    redirect("/dashboard");
   }
 
   return (
     <main className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-background p-4 md:p-6">
-      <div className="site-grid absolute inset-0 -z-20" />
       <div className="absolute -top-48 right-0 -z-10 size-120 rounded-full bg-primary/20 blur-3xl" />
       <div className="grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[1fr_28rem]">
         <section className="hidden max-w-lg lg:block">
@@ -33,13 +28,13 @@ export default async function AuthPage({ params }: { params: Promise<{ path: str
             Your publishing workspace starts with GitHub.
           </h1>
           <p className="mt-5 text-muted-foreground leading-7">
-            Sign in with the account that owns or maintains your public plugin repositories. Your
-            GitHub identity remains separate from the main BedrockNexus platform.
+            Continue with the account that owns or maintains your public plugin repositories. New
+            users are registered automatically on their first GitHub login.
           </p>
         </section>
         <div className="flex w-full flex-col items-center gap-8">
           <BrandMark imageClassName="w-64" />
-          <Auth className="max-w-md shadow-xl shadow-black/10" path={path} socialPosition="top" />
+          <Auth className="max-w-md shadow-xl shadow-black/10" view="signIn" socialPosition="top" />
         </div>
       </div>
     </main>

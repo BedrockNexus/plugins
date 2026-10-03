@@ -2,8 +2,6 @@
 
 import {
   AccountSetting01Icon,
-  Alert01Icon,
-  Analytics01Icon,
   ArrowLeft01Icon,
   Building03Icon,
   Clock01Icon,
@@ -52,7 +50,6 @@ const mainNavigation: SidebarNavItem[] = [
 const manageNavigation: SidebarNavItem[] = [
   { title: "Projects", url: "/dashboard/projects", icon: Package01Icon },
   { title: "Organizations", url: "/dashboard/organizations", icon: Building03Icon },
-  { title: "Analytics", url: "/dashboard/analytics", icon: Analytics01Icon },
 ];
 
 const settingsNavigation: SidebarNavItem[] = [
@@ -65,9 +62,7 @@ const adminNavigation: SidebarNavItem[] = [
   { title: "Overview", url: "/admin", icon: Shield01Icon, exactMatch: true },
   { title: "Publishing reviews", url: "/admin/reviews", icon: Package01Icon },
   { title: "Workflow templates", url: "/admin/workflows", icon: WorkflowSquare01Icon },
-  { title: "Reports", url: "/admin/reports", icon: Alert01Icon },
   { title: "Deliveries", url: "/admin/deliveries", icon: WebhookIcon },
-  { title: "History", url: "/admin/history", icon: Clock01Icon },
 ];
 
 function WorkspaceSwitcher() {

@@ -38,7 +38,7 @@ export default async function DeliveriesPage() {
       {deliveries.length === 0 ? (
         <Card className="border-dashed shadow-none">
           <CardContent className="flex min-h-64 flex-col items-center justify-center p-8 text-center">
-            <span className="grid size-14 place-items-center rounded-xl bg-primary text-primary-foreground">
+            <span className="grid size-14 place-items-center rounded-md bg-primary text-primary-foreground">
               <HugeiconsIcon className="size-6" icon={WebhookIcon} />
             </span>
             <h2 className="mt-5 font-semibold text-lg">No deliveries yet</h2>
@@ -55,7 +55,7 @@ export default async function DeliveriesPage() {
                 className="grid gap-4 py-5 first:pt-0 last:pb-0 sm:grid-cols-[auto_1fr_auto] sm:items-center"
                 key={delivery._id}
               >
-                <span className="grid size-11 place-items-center rounded-lg bg-primary text-primary-foreground">
+                <span className="grid size-11 place-items-center rounded-md bg-primary text-primary-foreground">
                   <HugeiconsIcon className="size-5" icon={statusIcons[delivery.status]} />
                 </span>
                 <div className="min-w-0">

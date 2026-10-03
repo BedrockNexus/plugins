@@ -17,7 +17,7 @@ export function EmptyState({
   return (
     <Card className="border-dashed bg-card shadow-none">
       <CardContent className="flex min-h-64 flex-col items-center justify-center px-6 text-center">
-        <span className="mb-5 grid size-12 place-items-center rounded-lg bg-primary text-primary-foreground">
+        <span className="mb-5 grid size-12 place-items-center rounded-md bg-primary text-primary-foreground">
           <HugeiconsIcon icon={icon} className="size-5" aria-hidden="true" />
         </span>
         <h2 className="text-lg font-semibold">{title}</h2>

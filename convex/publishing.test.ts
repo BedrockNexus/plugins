@@ -1,10 +1,13 @@
 /// <reference types="vite/client" />
 
 import aggregate from "@convex-dev/aggregate/test";
+import rateLimiter from "@convex-dev/rate-limiter/test";
+import shardedCounter from "@convex-dev/sharded-counter/test";
 import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { api, components, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import betterAuthSchema from "./betterAuth/schema";
 import schema from "./schema";
 
@@ -13,11 +16,26 @@ const betterAuthModules = import.meta.glob("./betterAuth/**/*.ts");
 
 type TestClient = ReturnType<typeof convexTest>;
 
+const FIXTURE_WORKFLOW_BLOB_SHA = "fixture-workflow-blob";
+
+/** Evidence that the managed workflow run created the release and asset. */
+function workflowProvenance(assetCreatedAt: number) {
+  return {
+    releaseAuthor: "github-actions[bot]",
+    assetUploader: "github-actions[bot]",
+    assetCreatedAt,
+    workflowBlobShaAtCommit: FIXTURE_WORKFLOW_BLOB_SHA,
+  };
+}
+
 function createTest() {
   const t = convexTest(schema, modules);
   t.registerComponent("betterAuth", betterAuthSchema, betterAuthModules);
+  rateLimiter.register(t);
   aggregate.register(t, "projectsBySoftware");
   aggregate.register(t, "projectsByOwner");
+  shardedCounter.register(t, "projectDownloadCounts");
+  shardedCounter.register(t, "ownerDownloadCounts");
   return t;
 }
 
@@ -138,6 +156,7 @@ async function createPublishingFoundation(
     draftId,
     branch: "main",
     commitSha: "workflow-commit",
+    workflowBlobSha: FIXTURE_WORKFLOW_BLOB_SHA,
     templateKey: adapterId === "pocketmine-mp" ? "pocketmine-mp:composer" : "powernukkitx:gradle",
     templateVersion: 1,
   });
@@ -146,7 +165,46 @@ async function createPublishingFoundation(
     sessionId: moderatorUser.sessionId,
     tokenIdentifier: `https://convex.test|${moderatorUserId}`,
   });
-  return { client, moderator, draftId, tokenIdentifier };
+  return { client, moderator, moderatorUserId, draftId, tokenIdentifier };
+}
+
+async function recordVerifiedRelease(
+  t: TestClient,
+  foundation: { tokenIdentifier: string; draftId: Id<"publishingDrafts"> },
+  version: string,
+  ids: { run: number; release: number; asset: number },
+) {
+  const now = Date.now();
+  return await t.mutation(internal.functions.projects.publishing.model.recordGitHubState, {
+    tokenIdentifier: foundation.tokenIdentifier,
+    draftId: foundation.draftId,
+    workflowInstalled: true,
+    run: {
+      id: ids.run,
+      url: `https://github.com/BedrockNexus/fixture/actions/runs/${ids.run}`,
+      status: "completed",
+      conclusion: "success",
+      commitSha: `commit-${version}`,
+      tag: `v${version}`,
+      createdAt: now,
+      startedAt: now,
+      completedAt: now,
+    },
+    release: {
+      id: ids.release,
+      url: `https://github.com/BedrockNexus/fixture/releases/tag/v${version}`,
+      tag: `v${version}`,
+      commitSha: `commit-${version}`,
+      version,
+      asset: {
+        id: ids.asset,
+        name: `fixture-${version}.phar`,
+        url: `https://github.com/BedrockNexus/fixture/releases/download/v${version}/fixture.phar`,
+        size: 1024,
+      },
+      provenance: workflowProvenance(now),
+    },
+  });
 }
 
 describe.each([
@@ -171,6 +229,7 @@ describe.each([
         commitSha: "matching-commit",
         tag: "v1.0.0",
         createdAt: now,
+        startedAt: now,
         completedAt: now,
       },
       release: {
@@ -186,6 +245,7 @@ describe.each([
           url: `https://github.com/BedrockNexus/fixture/releases/download/v1.0.0/${assetName}`,
           size: 1024,
         },
+        provenance: workflowProvenance(now),
       },
     });
 
@@ -289,6 +349,7 @@ describe("publishing verification boundaries", () => {
           commitSha: `commit-${version}`,
           tag: `v${version}`,
           createdAt: now,
+          startedAt: now,
           completedAt: now,
         },
         release: {
@@ -303,6 +364,7 @@ describe("publishing verification boundaries", () => {
             url: `https://github.com/BedrockNexus/fixture/releases/download/v${version}/fixture.phar`,
             size: 1024,
           },
+          provenance: workflowProvenance(now),
         },
       });
     }
@@ -360,6 +422,122 @@ describe("publishing verification boundaries", () => {
 
     const publishedDraft = await t.run((ctx) => ctx.db.get("publishingDrafts", foundation.draftId));
     expect(publishedDraft).toMatchObject({ status: "published", latestTag: "v2.0.0" });
+  });
+
+  it("keeps a rejected first submission rejected", async () => {
+    const t = createTest();
+    const foundation = await createPublishingFoundation(t, "pocketmine-mp");
+    await recordVerifiedRelease(t, foundation, "1.0.0", {
+      run: 6401,
+      release: 7401,
+      asset: 8401,
+    });
+    await foundation.client.mutation(api.functions.projects.publishing.model.submitForReview, {
+      draftId: foundation.draftId,
+    });
+    await foundation.moderator.mutation(api.functions.projects.publishing.model.rejectReview, {
+      draftId: foundation.draftId,
+      reason: "The plugin bundles a known malicious library.",
+    });
+
+    await expect(
+      foundation.client.mutation(api.functions.projects.publishing.model.submitForReview, {
+        draftId: foundation.draftId,
+      }),
+    ).rejects.toThrow("cannot be resubmitted");
+
+    const refreshed = await recordVerifiedRelease(t, foundation, "1.0.1", {
+      run: 6402,
+      release: 7402,
+      asset: 8402,
+    });
+    expect(refreshed).toEqual({ verifiedBuild: false, readyToPublish: false });
+
+    const stored = await t.run(async (ctx) => ({
+      draft: await ctx.db.get("publishingDrafts", foundation.draftId),
+      release: await ctx.db
+        .query("releases")
+        .withIndex("by_github_release_id", (query) => query.eq("githubReleaseId", 7401))
+        .unique(),
+    }));
+    expect(stored.draft?.status).toBe("rejected");
+    expect(stored.release?.status).toBe("rejected");
+  });
+
+  it("forbids moderators from approving their own submission", async () => {
+    const t = createTest();
+    const foundation = await createPublishingFoundation(t, "pocketmine-mp");
+    await recordVerifiedRelease(t, foundation, "1.0.0", {
+      run: 6501,
+      release: 7501,
+      asset: 8501,
+    });
+    await foundation.client.mutation(api.functions.projects.publishing.model.submitForReview, {
+      draftId: foundation.draftId,
+    });
+    // The moderator is also the submitter.
+    await t.run(async (ctx) => {
+      await ctx.db.patch("publishingDrafts", foundation.draftId, {
+        createdBy: foundation.moderatorUserId,
+      });
+    });
+
+    await expect(
+      foundation.moderator.mutation(api.functions.projects.publishing.model.approveReview, {
+        draftId: foundation.draftId,
+      }),
+    ).rejects.toThrow("cannot approve your own submission");
+  });
+
+  it("keeps the newest release as latest when an older release is approved", async () => {
+    const t = createTest();
+    const foundation = await createPublishingFoundation(t, "pocketmine-mp");
+    await recordVerifiedRelease(t, foundation, "1.0.0", { run: 6601, release: 7601, asset: 8601 });
+    await t.run(async (ctx) => {
+      const older = await ctx.db
+        .query("releases")
+        .withIndex("by_github_release_id", (query) => query.eq("githubReleaseId", 7601))
+        .unique();
+      if (older) await ctx.db.patch("releases", older._id, { createdAt: 1 });
+    });
+    await recordVerifiedRelease(t, foundation, "2.0.0", { run: 6602, release: 7602, asset: 8602 });
+
+    await foundation.client.mutation(api.functions.projects.publishing.model.submitForReview, {
+      draftId: foundation.draftId,
+    });
+    await foundation.moderator.mutation(api.functions.projects.publishing.model.approveReview, {
+      draftId: foundation.draftId,
+    });
+
+    const releases = await foundation.client.query(
+      api.functions.projects.publishing.model.listDetectedReleases,
+      { draftId: foundation.draftId },
+    );
+    const older = releases.find((release) => release.tagName === "v1.0.0");
+    if (!older) throw new Error("Expected the older release.");
+    await foundation.client.mutation(
+      api.functions.projects.publishing.model.selectDetectedRelease,
+      {
+        draftId: foundation.draftId,
+        releaseId: older.releaseId,
+      },
+    );
+    await foundation.client.mutation(api.functions.projects.publishing.model.submitForReview, {
+      draftId: foundation.draftId,
+    });
+    await foundation.moderator.mutation(api.functions.projects.publishing.model.approveReview, {
+      draftId: foundation.draftId,
+    });
+
+    const latestTag = await t.run(async (ctx) => {
+      const draft = await ctx.db.get("publishingDrafts", foundation.draftId);
+      const project = draft?.projectId ? await ctx.db.get("projects", draft.projectId) : null;
+      const version = project?.latestVersionId
+        ? await ctx.db.get("versions", project.latestVersionId)
+        : null;
+      return version?.version;
+    });
+    expect(latestTag).toBe("2.0.0");
   });
 
   it("never treats a normal default-branch run as a releasable build", async () => {
@@ -429,5 +607,184 @@ describe("publishing verification boundaries", () => {
     );
 
     expect(result.verifiedBuild).toBe(false);
+  });
+});
+
+describe("end-to-end publishing journey", () => {
+  it("takes a verified release from repository to public catalog and a counted download", async () => {
+    const redirectSecret = "journey-redirect-secret";
+    process.env.DOWNLOAD_REDIRECT_SECRET = redirectSecret;
+    const t = createTest();
+    const foundation = await createPublishingFoundation(t, "pocketmine-mp");
+    const now = Date.now();
+    const repository = "pocketmine-mp-fixture";
+
+    // GitHub reports a successful tag build whose asset the workflow uploaded.
+    const state = await t.mutation(internal.functions.projects.publishing.model.recordGitHubState, {
+      tokenIdentifier: foundation.tokenIdentifier,
+      draftId: foundation.draftId,
+      workflowInstalled: true,
+      run: {
+        id: 6901,
+        url: `https://github.com/BedrockNexus/${repository}/actions/runs/6901`,
+        status: "completed",
+        conclusion: "success",
+        commitSha: "journey-commit",
+        tag: "v1.2.0",
+        createdAt: now,
+        startedAt: now,
+        completedAt: now,
+      },
+      release: {
+        id: 7901,
+        url: `https://github.com/BedrockNexus/${repository}/releases/tag/v1.2.0`,
+        tag: "v1.2.0",
+        commitSha: "journey-commit",
+        version: "1.2.0",
+        publishedAt: now,
+        asset: {
+          id: 8901,
+          name: "journey.phar",
+          url: `https://github.com/BedrockNexus/${repository}/releases/download/v1.2.0/journey.phar`,
+          size: 4096,
+        },
+        provenance: workflowProvenance(now),
+      },
+    });
+    expect(state).toEqual({ verifiedBuild: true, readyToPublish: true });
+
+    // Not public before moderation.
+    expect(
+      await t.query(api.functions.site.catalog.getProject, { slug: "pocketmine-mp-fixture" }),
+    ).toBeNull();
+
+    await foundation.client.mutation(api.functions.projects.publishing.model.submitForReview, {
+      draftId: foundation.draftId,
+    });
+    await foundation.moderator.mutation(api.functions.projects.publishing.model.approveReview, {
+      draftId: foundation.draftId,
+    });
+
+    const listed = await t.query(api.functions.site.catalog.getProject, {
+      slug: "pocketmine-mp-fixture",
+    });
+    expect(listed?.project).toMatchObject({
+      latestVersion: { version: "1.2.0", verifiedBuild: true },
+    });
+
+    const download = {
+      projectSlug: "pocketmine-mp-fixture",
+      version: "1.2.0",
+      anonymousIdHash: "a".repeat(64),
+      userAgentHash: "b".repeat(64),
+      redirectSecret,
+    };
+    const first = await t.mutation(api.functions.projects.downloads.resolveAndRecord, download);
+    const repeat = await t.mutation(api.functions.projects.downloads.resolveAndRecord, download);
+    expect(first).toEqual({
+      url: `https://github.com/BedrockNexus/${repository}/releases/download/v1.2.0/journey.phar`,
+      counted: true,
+    });
+    expect(repeat.counted).toBe(false);
+  });
+});
+
+describe("project deletion", () => {
+  async function publishProject(t: TestClient) {
+    const foundation = await createPublishingFoundation(t, "pocketmine-mp");
+    await recordVerifiedRelease(t, foundation, "1.0.0", { run: 6951, release: 7951, asset: 8951 });
+    await foundation.client.mutation(api.functions.projects.publishing.model.submitForReview, {
+      draftId: foundation.draftId,
+    });
+    await foundation.moderator.mutation(api.functions.projects.publishing.model.approveReview, {
+      draftId: foundation.draftId,
+    });
+    const draft = await t.run((ctx) => ctx.db.get("publishingDrafts", foundation.draftId));
+    if (!draft?.projectId) throw new Error("Expected a published project.");
+    return { foundation, projectId: draft.projectId };
+  }
+
+  it("lets the owner delete a published project and purges its data", async () => {
+    vi.useFakeTimers();
+    try {
+      const t = createTest();
+      const { foundation, projectId } = await publishProject(t);
+
+      await expect(
+        foundation.client.mutation(api.functions.projects.deletion.deleteProject, {
+          draftId: foundation.draftId,
+          confirmSlug: "wrong-slug",
+        }),
+      ).rejects.toThrow("to confirm deletion");
+
+      await foundation.client.mutation(api.functions.projects.deletion.deleteProject, {
+        draftId: foundation.draftId,
+        confirmSlug: "pocketmine-mp-fixture",
+      });
+
+      expect(
+        await t.query(api.functions.site.catalog.getProject, { slug: "pocketmine-mp-fixture" }),
+      ).toBeNull();
+
+      await t.finishAllScheduledFunctions(vi.runAllTimers);
+      const remaining = await t.run(async (ctx) => ({
+        project: await ctx.db.get("projects", projectId),
+        draft: await ctx.db.get("publishingDrafts", foundation.draftId),
+        versions: await ctx.db
+          .query("versions")
+          .withIndex("by_project_id", (q) => q.eq("projectId", projectId))
+          .collect(),
+        releases: await ctx.db
+          .query("releases")
+          .withIndex("by_project_id", (q) => q.eq("projectId", projectId))
+          .collect(),
+        assets: await ctx.db.query("releaseAssets").collect(),
+        audit: await ctx.db
+          .query("adminActions")
+          .withIndex("by_target_key_and_created_at", (q) => q.eq("targetKey", projectId))
+          .collect(),
+      }));
+      expect(remaining).toMatchObject({
+        project: null,
+        draft: null,
+        versions: [],
+        releases: [],
+        assets: [],
+      });
+      expect(remaining.audit).toEqual([
+        expect.objectContaining({ action: "project.delete", resultingState: "deleted" }),
+      ]);
+
+      // With the project gone and the GitHub App uninstalled, nothing blocks
+      // self-service account deletion.
+      const userId = foundation.tokenIdentifier.split("|")[1];
+      expect(
+        await t.mutation(internal.functions.site.accountDeletion.prepare, { userId }),
+      ).toContain("Uninstall the BedrockNexus Plugins GitHub App");
+      await t.run(async (ctx) => {
+        const installations = await ctx.db.query("githubInstallations").collect();
+        for (const installation of installations) {
+          await ctx.db.patch("githubInstallations", installation._id, { status: "deleted" });
+        }
+      });
+      expect(
+        await t.mutation(internal.functions.site.accountDeletion.prepare, { userId }),
+      ).toBeNull();
+      expect(await t.run((ctx) => ctx.db.query("githubInstallations").collect())).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not let moderators or other users delete a project", async () => {
+    const t = createTest();
+    const { foundation } = await publishProject(t);
+
+    await expect(
+      foundation.moderator.mutation(api.functions.projects.deletion.deleteProject, {
+        draftId: foundation.draftId,
+        confirmSlug: "pocketmine-mp-fixture",
+      }),
+    ).rejects.toThrow("Only the owner, an organization manager, or an admin");
   });
 });

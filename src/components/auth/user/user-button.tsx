@@ -11,7 +11,6 @@ import {
   Login01Icon,
   Logout01Icon,
   Settings01Icon,
-  UserAdd01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { isValidElement, type ReactElement, type ReactNode } from "react";
@@ -82,7 +81,7 @@ function renderUserLink(
  * Render a user dropdown button that shows user info, settings, theme controls, and authentication actions.
  *
  * Includes user profile, settings link, optional multi-session account switching, theme picker,
- * and sign-in/sign-up/sign-out actions depending on authentication state.
+ * and login/logout actions depending on authentication state.
  *
  * @param className - Additional CSS classes applied to the button trigger
  * @param align - Alignment of the dropdown menu relative to the trigger
@@ -218,18 +217,6 @@ export function UserButton({
               <HugeiconsIcon icon={Login01Icon} className="text-muted-foreground" />
 
               {localization.auth.signIn}
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              onClick={() =>
-                navigate({
-                  to: `${basePaths.auth}/${viewPaths.auth.signUp}`,
-                })
-              }
-            >
-              <HugeiconsIcon icon={UserAdd01Icon} className="text-muted-foreground" />
-
-              {localization.auth.signUp}
             </DropdownMenuItem>
 
             {plugins.flatMap((plugin) =>

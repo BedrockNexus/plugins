@@ -213,6 +213,8 @@ export const publishingDraftValidator = v.object({
     v.union(v.literal("open"), v.literal("closed"), v.literal("merged")),
   ),
   workflowCommitSha: v.optional(v.string()),
+  // Git blob SHA of the managed workflow file BedrockNexus installed.
+  workflowBlobSha: v.optional(v.string()),
   workflowTemplateKey: v.optional(v.string()),
   workflowTemplateVersion: v.optional(v.number()),
   workflowInstalledAt: v.optional(v.number()),
@@ -446,6 +448,8 @@ export const tables = {
       v.union(v.literal("open"), v.literal("closed"), v.literal("merged")),
     ),
     workflowCommitSha: v.optional(v.string()),
+    // Git blob SHA of the managed workflow file BedrockNexus installed.
+    workflowBlobSha: v.optional(v.string()),
     workflowTemplateKey: v.optional(v.string()),
     workflowTemplateVersion: v.optional(v.number()),
     workflowInstalledAt: v.optional(v.number()),
@@ -658,6 +662,8 @@ export const tables = {
       v.literal("rejected"),
     ),
     verifiedBuild: v.boolean(),
+    // Why the release is not a traceable build (see convex/lib/buildProvenance.ts).
+    verificationFailure: v.optional(v.string()),
     publishedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -676,6 +682,8 @@ export const tables = {
     downloadUrl: v.string(),
     size: v.number(),
     contentType: v.optional(v.string()),
+    // GitHub-reported digest of the asset, e.g. `sha256:...`.
+    digest: v.optional(v.string()),
     sha256: v.optional(v.string()),
     isPrimary: v.boolean(),
     status: v.union(v.literal("accepted"), v.literal("rejected")),

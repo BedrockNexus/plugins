@@ -132,7 +132,7 @@ export function WorkflowTemplateEditor() {
     <div className="grid gap-6 xl:grid-cols-[18rem_minmax(0,1fr)]">
       <Card className="h-fit shadow-none">
         <CardHeader>
-          <span className="mb-3 grid size-11 place-items-center rounded-lg bg-primary text-primary-foreground">
+          <span className="mb-3 grid size-11 place-items-center rounded-md bg-primary text-primary-foreground">
             <HugeiconsIcon className="size-5" icon={WorkflowSquare01Icon} />
           </span>
           <CardTitle>Workflow variants</CardTitle>
@@ -149,8 +149,8 @@ export function WorkflowTemplateEditor() {
             <button
               className={
                 !adding && template.key === selected.key
-                  ? "flex w-full flex-col rounded-lg bg-primary p-3 text-left text-primary-foreground"
-                  : "flex w-full flex-col rounded-lg border p-3 text-left hover:bg-muted"
+                  ? "flex w-full flex-col rounded-md bg-primary p-3 text-left text-primary-foreground"
+                  : "flex w-full flex-col rounded-md border p-3 text-left hover:bg-muted"
               }
               key={template.key}
               onClick={() => {
@@ -260,7 +260,7 @@ export function WorkflowTemplateEditor() {
                   value={newWorkflow.content}
                 />
               </div>
-              <div className="rounded-lg border bg-muted p-3 text-muted-foreground text-sm">
+              <div className="rounded-md border bg-muted p-3 text-muted-foreground text-sm">
                 The new workflow must keep the{" "}
                 <code className="text-foreground">{"{{package_name}}"}</code> placeholder and pass
                 the same permission, trigger, secret, and runner checks as the built-in workflows.
@@ -311,7 +311,7 @@ export function WorkflowTemplateEditor() {
                 value={content}
               />
             </div>
-            <div className="rounded-lg border bg-muted p-3 text-muted-foreground text-sm">
+            <div className="rounded-md border bg-muted p-3 text-muted-foreground text-sm">
               Keep the <code className="text-foreground">{"{{package_name}}"}</code> placeholder.
               The backend also validates release gating, GitHub Release creation, and
               least-privilege permissions before saving.

@@ -28,7 +28,8 @@
     "audit": "bun audit",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -72,6 +73,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.9",
     "@edge-runtime/vm": "^5.0.0",
+    "@playwright/test": "1.60.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/html-to-text": "^9.0.4",
     "@types/node": "^26",

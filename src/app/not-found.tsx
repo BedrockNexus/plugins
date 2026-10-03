@@ -8,7 +8,7 @@ export default function NotFound() {
   return (
     <main className="grid min-h-screen place-items-center px-4 text-center">
       <div>
-        <span className="mx-auto grid size-12 place-items-center rounded-lg bg-primary text-primary-foreground">
+        <span className="mx-auto grid size-12 place-items-center rounded-md bg-primary text-primary-foreground">
           <HugeiconsIcon icon={CompassIcon} className="size-5" aria-hidden="true" />
         </span>
         <p className="mt-5 font-mono text-xs font-semibold tracking-[0.18em] uppercase">404</p>

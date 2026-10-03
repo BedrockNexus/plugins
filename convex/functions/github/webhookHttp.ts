@@ -1,6 +1,8 @@
 import { internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import { env, httpAction } from "../../_generated/server";
+import { rateLimiter } from "../../lib/rateLimits";
+import { logEvent, safeErrorMessage } from "../../lib/redact";
 import { type NormalizedGitHubWebhook, parseGitHubWebhookPayload } from "./webhookPayload";
 import { verifyGitHubWebhookSignature } from "./webhookSignature";
 
@@ -32,6 +34,11 @@ export const githubWebhook = httpAction(async (ctx, request) => {
   }
 
   if (!(await verifyGitHubWebhookSignature(webhookSecret, rawPayload, signature))) {
+    // Valid GitHub deliveries are never limited; repeated forged requests are.
+    const limit = await rateLimiter.limit(ctx, "invalidWebhook", { key: "global" });
+    if (!limit.ok) {
+      return jsonResponse(429, { error: "Too many invalid webhook requests." });
+    }
     return jsonResponse(401, { error: "Invalid webhook signature." });
   }
 
@@ -93,7 +100,8 @@ export const githubWebhook = httpAction(async (ctx, request) => {
       status: result.status,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Webhook processing failed.";
+    const message = safeErrorMessage(error, "Webhook processing failed.");
+    logEvent("error", "github_webhook_failed", { deliveryId, event, error });
     await ctx.runMutation(internal.functions.github.webhooks.failDelivery, {
       webhookDeliveryId: claim.webhookDeliveryId,
       attemptNumber: claim.attemptNumber,

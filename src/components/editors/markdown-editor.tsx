@@ -8,7 +8,7 @@ const ClientMarkdownEditor = dynamic(
   () => import("./markdown-editor-core").then((module) => module.MarkdownEditorCore),
   {
     loading: () => (
-      <div className="min-h-72 animate-pulse rounded-lg border bg-muted" aria-hidden="true" />
+      <div className="min-h-72 animate-pulse rounded-md border bg-muted" aria-hidden="true" />
     ),
     ssr: false,
   },

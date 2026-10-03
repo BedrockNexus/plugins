@@ -37,7 +37,6 @@ Their callback URLs must use the matching public application origin.
 
 The Next.js application reads these non-secret values from `.env.local`:
 
-- `NEXT_PUBLIC_SITE_URL=http://localhost:3000`
 - `NEXT_PUBLIC_CONVEX_URL`
 - `NEXT_PUBLIC_CONVEX_SITE_URL`
 

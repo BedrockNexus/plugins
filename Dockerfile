@@ -5,6 +5,24 @@ WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
+# Lint, typecheck and unit tests. CI builds this stage first (test-target:
+# test) and only builds, pushes and deploys the image when it passes. Vitest
+# runs on Node; Bun is copied in only to run the package scripts.
+FROM node:24-alpine AS test
+
+WORKDIR /app
+
+ENV NEXT_TELEMETRY_DISABLED=1
+# Public, non-production placeholders used by tests and static checks.
+ENV NEXT_PUBLIC_CONVEX_URL=https://ci-placeholder.convex.cloud
+ENV NEXT_PUBLIC_CONVEX_SITE_URL=https://ci-placeholder.convex.site
+
+COPY --from=dependencies /usr/local/bin/bun /usr/local/bin/bun
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY . .
+
+RUN bun run format:check && bun run lint && bun run typecheck && bun run test
+
 FROM node:24-alpine AS builder
 
 WORKDIR /app

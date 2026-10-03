@@ -32,7 +32,7 @@ export function AccountIdentity() {
               <Skeleton className="mt-2 h-5 w-56" />
             )}
           </div>
-          <p className="rounded-lg border bg-muted p-3 text-muted-foreground text-xs leading-5">
+          <p className="rounded-md border bg-muted p-3 text-muted-foreground text-xs leading-5">
             Profile details, email, password, recovery, and connected-account access are managed by
             GitHub. BedrockNexus Plugins does not maintain a separate editable identity.
           </p>

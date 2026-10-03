@@ -1,23 +1,23 @@
 import {
+  ArrowRight01Icon,
   CheckmarkBadge01Icon,
   Download01Icon,
   GitBranchIcon,
   GithubIcon,
-  Package01Icon,
-  StarIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { fetchQuery } from "convex/nextjs";
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PageShell } from "@/components/page-shell";
-import { RegistryMetric, RegistrySection } from "@/components/registry/registry-section";
+import type { ReactNode } from "react";
+import { ProjectAvatar, projectOwner } from "@/components/registry/project-card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatBytes, formatCompactNumber, formatRegistryDate } from "@/lib/format-registry";
 import { registryTextParagraphs } from "@/lib/registry-content";
+import { cn } from "@/lib/utils";
 import { api } from "../../../../../convex/_generated/api";
 
 type ProjectPageProps = { params: Promise<{ slug: string }> };
@@ -34,6 +34,15 @@ export async function generateMetadata({ params }: ProjectPageProps): Promise<Me
     : { title: "Project not found" };
 }
 
+function DetailRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex justify-between gap-4 py-2 text-sm">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 truncate text-right font-medium">{children}</dd>
+    </div>
+  );
+}
+
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { slug } = await params;
   const result = await fetchQuery(api.functions.site.catalog.getProject, { slug });
@@ -48,221 +57,272 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     .split("/")
     .map(encodeURIComponent)
     .join("/")}`;
-  const owner = project.organization ?? project.creator;
+  const owner = projectOwner(project);
+  const ownerHref = project.organization
+    ? (`/organizations/${project.organization.slug}` as Route)
+    : project.creator
+      ? (`/creators/${project.creator.slug}` as Route)
+      : null;
 
   return (
-    <PageShell
-      eyebrow={`${project.software.name} project`}
-      title={project.name}
-      description={project.summary}
-      actions={
-        <div className="flex flex-wrap gap-2">
-          {project.latestVersion?.verifiedBuild && (
-            <Badge variant="accent">
-              <HugeiconsIcon className="size-3.5" icon={CheckmarkBadge01Icon} />
-              Traceable build
-            </Badge>
-          )}
-          <Badge variant="outline">Public source</Badge>
-        </div>
-      }
-    >
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_20rem]">
-        <div className="space-y-8">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <RegistryMetric
-              label="Downloads"
-              value={formatCompactNumber(project.downloadCount)}
-              detail="Recorded redirects"
-            />
-            <RegistryMetric
-              label="Rating"
-              value={project.ratingCount > 0 ? project.ratingAverage.toFixed(1) : "New"}
-              detail={`${project.ratingCount} public reviews`}
-            />
-            <RegistryMetric
-              label="Latest version"
-              value={project.latestVersion?.version ?? "—"}
-              detail={formatRegistryDate(project.latestVersion?.publishedAt)}
-            />
-          </div>
+    <main className="flex-1">
+      <section className="border-b bg-surface-sunken">
+        <div className="container mx-auto px-4 py-8 md:px-6 lg:py-10">
+          <nav aria-label="Breadcrumb" className="mb-6 text-muted-foreground text-sm">
+            <ol className="flex flex-wrap items-center gap-1.5">
+              <li>
+                <Link className="hover:text-foreground" href="/explore">
+                  Explore
+                </Link>
+              </li>
+              <li aria-hidden="true">/</li>
+              <li>
+                <Link
+                  className="hover:text-foreground"
+                  href={`/explore?software=${project.software.slug}` as Route}
+                >
+                  {project.software.name}
+                </Link>
+              </li>
+              <li aria-hidden="true">/</li>
+              <li aria-current="page" className="truncate text-foreground">
+                {project.name}
+              </li>
+            </ol>
+          </nav>
 
-          <RegistrySection title="About this project">
-            <Card className="shadow-none">
-              <CardContent className="space-y-4 text-muted-foreground leading-7">
-                {description?.length ? (
-                  description.map((paragraph) => <p key={paragraph}>{paragraph}</p>)
-                ) : (
-                  <p>{project.summary}</p>
-                )}
-              </CardContent>
-            </Card>
-          </RegistrySection>
+          <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+            <div className="flex min-w-0 gap-4 sm:gap-5">
+              <ProjectAvatar
+                avatarUrl={owner.avatarUrl}
+                className="extrude size-20 sm:size-28"
+                name={project.name}
+              />
+              <div className="min-w-0">
+                <h1 className="text-balance font-bold text-[clamp(2rem,4vw,3.25rem)] leading-none">
+                  {project.name}
+                </h1>
+                <p className="mt-1 text-muted-foreground text-sm">
+                  by{" "}
+                  {ownerHref ? (
+                    <Link className="font-medium text-foreground hover:underline" href={ownerHref}>
+                      {owner.label}
+                    </Link>
+                  ) : (
+                    owner.label
+                  )}
+                </p>
+                <p className="mt-3 max-w-2xl text-[17px] text-muted-foreground">
+                  {project.summary}
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <Badge variant="outline">{project.software.name}</Badge>
+                  {project.latestVersion?.verifiedBuild ? (
+                    <Badge variant="accent">
+                      <HugeiconsIcon className="size-3.5" icon={CheckmarkBadge01Icon} />
+                      Traceable build
+                    </Badge>
+                  ) : null}
+                  <span className="flex items-center gap-1 text-muted-foreground text-sm">
+                    <HugeiconsIcon className="size-4" icon={Download01Icon} />
+                    {formatCompactNumber(project.downloadCount)} downloads
+                  </span>
+                </div>
+              </div>
+            </div>
 
-          <RegistrySection
-            title="Version history"
-            description="Artifacts stay on GitHub; BedrockNexus records and redirects trusted release assets."
-          >
-            {versions.length > 0 ? (
-              <Card className="shadow-none">
-                <CardContent className="divide-y">
-                  {versions.map((version) => {
-                    const changelog = registryTextParagraphs(version.changelog);
-                    const canDownload =
-                      version.release?.verifiedBuild === true && version.release.asset !== null;
-                    return (
-                      <article
-                        className="py-5 first:pt-0 last:pb-0"
-                        key={version.normalizedVersion}
-                      >
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
-                            <HugeiconsIcon className="size-4" icon={Package01Icon} />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="font-semibold">v{version.version}</h3>
-                              <Badge variant={canDownload ? "accent" : "outline"}>
-                                {canDownload ? "Traceable build" : "Release metadata"}
-                              </Badge>
-                            </div>
-                            <p className="mt-1 text-muted-foreground text-sm">
-                              {version.minecraftVersion
-                                ? `Minecraft ${version.minecraftVersion} · `
-                                : ""}
-                              {formatRegistryDate(version.publishedAt)}
-                              {version.release?.asset
-                                ? ` · ${formatBytes(version.release.asset.size)}`
-                                : ""}
-                            </p>
-                          </div>
-                          {canDownload && (
-                            <Link
-                              className={buttonVariants({ variant: "outline" })}
-                              href={
-                                `/download/${project.slug}/${version.normalizedVersion}` as Route
-                              }
-                              rel="nofollow"
-                            >
-                              <HugeiconsIcon className="size-4" icon={Download01Icon} />
-                              Download
-                            </Link>
-                          )}
-                        </div>
-                        {changelog?.length ? (
-                          <details className="mt-4 rounded-lg border p-4 text-sm">
-                            <summary className="cursor-pointer font-medium">Changelog</summary>
-                            <div className="mt-3 space-y-3 text-muted-foreground leading-6">
-                              {changelog.map((paragraph) => (
-                                <p key={paragraph}>{paragraph}</p>
-                              ))}
-                            </div>
-                          </details>
-                        ) : null}
-                      </article>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="shadow-none">
-                <CardContent className="text-muted-foreground text-sm">
-                  No public versions are available.
-                </CardContent>
-              </Card>
-            )}
-          </RegistrySection>
-        </div>
-
-        <aside className="space-y-6">
-          <Card className="shadow-none">
-            <CardHeader>
-              <CardTitle>Latest download</CardTitle>
-              <CardDescription>{project.software.name} plugin</CardDescription>
-            </CardHeader>
-            <CardContent>
+            <div className="flex shrink-0 flex-col gap-2 sm:flex-row md:flex-col lg:flex-row">
               {downloadable ? (
                 <Link
-                  className={buttonVariants({ className: "w-full", size: "lg" })}
+                  className={buttonVariants({ size: "xl", variant: "brand", className: "gap-2" })}
                   href={`/download/${project.slug}/${downloadable.normalizedVersion}` as Route}
                   rel="nofollow"
                 >
                   <HugeiconsIcon className="size-4" icon={Download01Icon} />
                   Download v{downloadable.version}
                 </Link>
-              ) : (
-                <p className="rounded-lg border p-4 text-muted-foreground text-sm">
-                  No verified release asset is available.
-                </p>
-              )}
-              <p className="mt-3 text-center text-muted-foreground text-xs">
-                Redirects to the validated GitHub asset
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-none">
-            <CardContent className="space-y-4">
-              <div className="flex gap-3">
-                <HugeiconsIcon className="mt-0.5 size-4 shrink-0" icon={GitBranchIcon} />
-                <div>
-                  <p className="font-medium text-sm">Build provenance</p>
-                  <p className="mt-1 text-muted-foreground text-xs leading-5">
-                    A traceable build links the release tag, commit, workflow run, and selected
-                    artifact. It is not a security review.
-                  </p>
-                </div>
-              </div>
-              {downloadable?.release?.build && (
-                <dl className="grid gap-2 border-t pt-4 text-xs">
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-muted-foreground">Workflow run</dt>
-                    <dd>#{downloadable.release.build.workflowRunId}</dd>
-                  </div>
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-muted-foreground">Commit</dt>
-                    <dd className="font-mono">{downloadable.release.commitSha.slice(0, 12)}</dd>
-                  </div>
-                </dl>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-none">
-            <CardContent className="space-y-3">
-              {owner && (
-                <Link
-                  className={buttonVariants({
-                    className: "w-full justify-start",
-                    variant: "outline",
-                  })}
-                  href={
-                    project.organization
-                      ? (`/organizations/${project.organization.slug}` as Route)
-                      : (`/creators/${project.creator?.slug}` as Route)
-                  }
-                >
-                  <HugeiconsIcon className="size-4" icon={StarIcon} />
-                  {project.organization?.name ??
-                    (project.creator ? `@${project.creator.username}` : null)}
-                </Link>
-              )}
+              ) : null}
               <a
-                className={buttonVariants({
-                  className: "w-full justify-start",
-                  variant: "outline",
-                })}
+                className={buttonVariants({ size: "xl", variant: "outline", className: "gap-2" })}
                 href={repositoryUrl}
                 rel="noreferrer"
                 target="_blank"
               >
                 <HugeiconsIcon className="size-4" icon={GithubIcon} />
-                {repository.fullName}
+                Source
               </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="container mx-auto grid gap-7 px-4 pt-8 pb-16 md:px-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="min-w-0 space-y-10">
+          <section aria-labelledby="about-heading">
+            <h2 className="mb-3 font-bold text-2xl" id="about-heading">
+              About
+            </h2>
+            <div className="space-y-4 text-muted-foreground leading-7">
+              {description?.length ? (
+                description.map((paragraph) => <p key={paragraph}>{paragraph}</p>)
+              ) : (
+                <p>{project.summary}</p>
+              )}
+            </div>
+          </section>
+
+          <section aria-labelledby="versions-heading">
+            <h2 className="font-bold text-2xl" id="versions-heading">
+              Versions
+            </h2>
+            <p className="mt-1 mb-4 text-muted-foreground text-sm">
+              Files stay on GitHub. Downloads redirect to the verified release asset.
+            </p>
+            {versions.length > 0 ? (
+              <div className="divide-y overflow-hidden rounded-md border bg-card">
+                {versions.map((version) => {
+                  const changelog = registryTextParagraphs(version.changelog);
+                  const canDownload =
+                    version.release?.verifiedBuild === true && version.release.asset !== null;
+                  return (
+                    <article className="p-4 sm:p-5" key={version.normalizedVersion}>
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="font-mono font-semibold">v{version.version}</h3>
+                            {canDownload ? (
+                              <Badge variant="accent">Traceable build</Badge>
+                            ) : (
+                              <Badge variant="outline">Metadata only</Badge>
+                            )}
+                          </div>
+                          <p className="mt-1 text-muted-foreground text-sm">
+                            {[
+                              version.minecraftVersion
+                                ? `Minecraft ${version.minecraftVersion}`
+                                : null,
+                              formatRegistryDate(version.publishedAt),
+                              version.release?.asset
+                                ? formatBytes(version.release.asset.size)
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        </div>
+                        {canDownload ? (
+                          <Link
+                            className={buttonVariants({ size: "sm", variant: "outline" })}
+                            href={`/download/${project.slug}/${version.normalizedVersion}` as Route}
+                            rel="nofollow"
+                          >
+                            <HugeiconsIcon className="size-4" icon={Download01Icon} />
+                            Download
+                          </Link>
+                        ) : null}
+                      </div>
+                      {changelog?.length ? (
+                        <details className="mt-3 text-sm">
+                          <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
+                            Changelog
+                          </summary>
+                          <div className="mt-2 space-y-3 border-l-2 border-primary pl-4 text-muted-foreground leading-6">
+                            {changelog.map((paragraph) => (
+                              <p key={paragraph}>{paragraph}</p>
+                            ))}
+                          </div>
+                        </details>
+                      ) : null}
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="rounded-md border border-dashed p-6 text-center text-muted-foreground text-sm">
+                No public versions are available.
+              </p>
+            )}
+          </section>
+        </div>
+
+        <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+          <Card className="shadow-none">
+            <CardHeader>
+              <CardTitle>Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="divide-y">
+                <DetailRow label="Software">{project.software.name}</DetailRow>
+                <DetailRow label="Latest version">
+                  {project.latestVersion ? `v${project.latestVersion.version}` : "—"}
+                </DetailRow>
+                <DetailRow label="Updated">
+                  {formatRegistryDate(project.latestVersion?.publishedAt)}
+                </DetailRow>
+                <DetailRow label="Downloads">
+                  {formatCompactNumber(project.downloadCount)}
+                </DetailRow>
+                {project.license ? <DetailRow label="License">{project.license}</DetailRow> : null}
+              </dl>
             </CardContent>
           </Card>
+
+          <Card className="shadow-none">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <HugeiconsIcon className="size-4" icon={GitBranchIcon} />
+                Build provenance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-xs leading-5">
+                A traceable build links the release tag, commit, workflow run, and asset. It is not
+                a security review.
+              </p>
+              <dl className="mt-3 divide-y border-t">
+                <DetailRow label="Repository">
+                  <a
+                    className="hover:underline"
+                    href={repositoryUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {repository.fullName}
+                  </a>
+                </DetailRow>
+                {downloadable?.release?.build ? (
+                  <>
+                    <DetailRow label="Workflow run">
+                      #{downloadable.release.build.workflowRunId}
+                    </DetailRow>
+                    <DetailRow label="Commit">
+                      <span className="font-mono">
+                        {downloadable.release.commitSha.slice(0, 12)}
+                      </span>
+                    </DetailRow>
+                  </>
+                ) : null}
+              </dl>
+            </CardContent>
+          </Card>
+
+          {ownerHref ? (
+            <Link
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "h-auto w-full justify-between gap-3 py-3",
+              )}
+              href={ownerHref}
+            >
+              <span className="flex min-w-0 items-center gap-3">
+                <ProjectAvatar avatarUrl={owner.avatarUrl} className="size-8" name={owner.label} />
+                <span className="truncate">More from {owner.label}</span>
+              </span>
+              <HugeiconsIcon className="size-4 shrink-0" icon={ArrowRight01Icon} />
+            </Link>
+          ) : null}
         </aside>
       </div>
-    </PageShell>
+    </main>
   );
 }

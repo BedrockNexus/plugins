@@ -12,6 +12,9 @@ separate Convex deployments, OAuth applications, GitHub Apps, and secrets.
 | `NEXT_PUBLIC_CONVEX_URL` | No | Convex cloud URL bundled into the client |
 | `NEXT_PUBLIC_CONVEX_SITE_URL` | No | Convex HTTP site URL used by Better Auth |
 | `DOWNLOAD_REDIRECT_SECRET` | Yes | Authorizes the Next.js download route to record a redirect |
+| `AUTH_PROXY_SECRET` | Yes | Lets Convex trust the client address forwarded by `/api/auth` for rate limiting |
+| `TRUSTED_PROXY_HOPS` | No | Optional. Proxies that append to `X-Forwarded-For` (default 1) |
+| `CLIENT_IP_HEADER` | No | Optional. Single trusted client-IP header, e.g. `cf-connecting-ip` |
 
 Start with `.env.example`. Never commit `.env.local`.
 
@@ -32,6 +35,7 @@ Set these with `bunx convex env set NAME VALUE` against the intended deployment:
 | `GITHUB_APP_WEBHOOK_SECRET` | Yes | Verifies GitHub webhook signatures |
 | `GITHUB_APP_SLUG` | No | Repository GitHub App slug |
 | `DOWNLOAD_REDIRECT_SECRET` | Yes | Must exactly match the Next.js value |
+| `AUTH_PROXY_SECRET` | Yes | Must exactly match the Next.js value; without it all sign-ins share one rate-limit bucket |
 
 Generate secrets with a cryptographically secure generator. Use different
 values in every environment and rotate a value immediately if it may have been
@@ -43,10 +47,11 @@ restores PEM line breaks before constructing the Octokit client.
 ## CI
 
 CI uses non-production placeholder Convex URLs for validation and does not
-produce a deployable artifact. The separate `Build and push (GHCR)` workflow
-reads production public URLs from the GitHub `prod` environment and publishes
-the deployable image after pushes to `main` or manual workflow dispatch. Neither
-workflow authenticates to or calls protected Convex functions.
+produce a deployable artifact. The `Deploy` workflow reads the production
+public URLs (`NEXT_PUBLIC_CONVEX_URL`, `NEXT_PUBLIC_CONVEX_SITE_URL`) from
+repository variables, builds and publishes the image after pushes to `main` or
+manual workflow dispatch, and then triggers Coolify. No workflow authenticates
+to or calls protected Convex functions.
 
 ## Production
 

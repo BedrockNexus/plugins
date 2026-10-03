@@ -125,7 +125,7 @@ export default async function ProjectsPage({
       }
     >
       {status ? (
-        <div className="flex items-start gap-3 rounded-xl border bg-card p-4 text-sm">
+        <div className="flex items-start gap-3 rounded-md border bg-card p-4 text-sm">
           <HugeiconsIcon
             className="mt-0.5 size-5 shrink-0 text-primary"
             icon={CheckmarkCircle02Icon}
@@ -182,7 +182,7 @@ export default async function ProjectsPage({
       {rows.length === 0 ? (
         <Card className="border-dashed shadow-none">
           <CardContent className="flex min-h-72 flex-col items-center justify-center p-8 text-center">
-            <span className="grid size-14 place-items-center rounded-xl bg-primary text-primary-foreground">
+            <span className="grid size-14 place-items-center rounded-md bg-primary text-primary-foreground">
               <HugeiconsIcon className="size-6" icon={Package01Icon} />
             </span>
             <h2 className="mt-5 font-semibold text-lg">Add your first project</h2>

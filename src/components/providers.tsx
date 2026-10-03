@@ -65,6 +65,12 @@ export function Providers({
           <AuthProvider
             authClient={authClient as unknown as AuthClient}
             emailAndPassword={{ enabled: false }}
+            localization={{
+              auth: {
+                signIn: "Login",
+                signOut: "Logout",
+              },
+            }}
             plugins={[
               deleteUserPlugin(),
               organizationPlugin({
@@ -78,9 +84,16 @@ export function Providers({
               }),
             ]}
             basePaths={{
-              auth: "/auth",
+              auth: "",
               settings: "/dashboard/settings",
               organization: "/dashboard/organizations",
+            }}
+            viewPaths={{
+              auth: {
+                signIn: "login",
+                signUp: "login",
+                signOut: "logout",
+              },
             }}
             multipleAccountsPerProvider={false}
             redirectTo="/dashboard"

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { api } from "@/../convex/_generated/api";
+import { logEvent } from "@/../convex/lib/redact";
 import { fetchAuthAction, fetchAuthMutation, isAuthenticated } from "@/lib/auth-server";
 
 export async function GET(request: Request) {
@@ -11,9 +12,7 @@ export async function GET(request: Request) {
   const installationId = Number(installationIdValue);
 
   if (!(await isAuthenticated())) {
-    return NextResponse.redirect(
-      new URL("/auth/sign-in?redirectTo=/dashboard/projects/new", request.url),
-    );
+    return NextResponse.redirect(new URL("/login?redirectTo=/dashboard/projects/new", request.url));
   }
 
   if (
@@ -40,7 +39,7 @@ export async function GET(request: Request) {
     destination.searchParams.set("account", result.accountLogin);
     return NextResponse.redirect(destination);
   } catch (error) {
-    console.error("GitHub App installation callback failed.", error);
+    logEvent("error", "github_install_callback_failed", { error });
     return NextResponse.redirect(
       new URL("/dashboard/projects?github=connection-failed", request.url),
     );

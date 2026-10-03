@@ -4,6 +4,7 @@ import type { Doc } from "../../_generated/dataModel";
 import { type MutationCtx, mutation, query } from "../../_generated/server";
 import { authComponent } from "../../auth";
 import { normalizeAppRole } from "../../lib/authorization";
+import { enforceRateLimit } from "../../lib/rateLimits";
 import { normalizeUsername } from "../../lib/usernames";
 import { creatorProfileValidator, roleValidator } from "../../schema";
 
@@ -162,6 +163,7 @@ export const syncCurrentUser = mutation({
   returns: syncedUserValidator,
   handler: async (ctx) => {
     const authUser = await authComponent.getAuthUser(ctx);
+    await enforceRateLimit(ctx, "userSync", authUser._id);
     const now = Date.now();
     const image = authUser.image ?? undefined;
     const githubUsername = authUser.githubUsername ?? undefined;

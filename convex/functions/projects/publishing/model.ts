@@ -19,11 +19,14 @@ import {
   moderatorMutation,
   moderatorQuery,
 } from "../../../lib/authorization";
+import { evaluateBuildProvenance } from "../../../lib/buildProvenance";
 import {
+  getActiveOrganizationMembership,
   listOrganizationMemberships,
   requireOrganizationManager,
 } from "../../../lib/domainAuthorization";
 import { insertProjectAggregates, replaceProjectAggregates } from "../../../lib/projectAggregates";
+import { enforceRateLimit } from "../../../lib/rateLimits";
 import {
   listResolvedWorkflowTemplates,
   resolveWorkflowTemplate,
@@ -148,6 +151,7 @@ export const saveMetadata = authenticatedMutation({
     projectId: v.id("projects"),
   }),
   handler: async (ctx, args) => {
+    await enforceRateLimit(ctx, "publishingEdit", ctx.user._id);
     const draft = await requireOwnedDraft(ctx, args.draftId, ctx.user);
     if (draft.status === "inReview") {
       throw new ConvexError({
@@ -295,6 +299,7 @@ export const selectWorkflow = authenticatedMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    await enforceRateLimit(ctx, "publishingEdit", ctx.user._id);
     const draft = await requireOwnedDraft(ctx, args.draftId, ctx.user);
     if (draft.status === "inReview") {
       throw new ConvexError({
@@ -367,6 +372,7 @@ export const recordWorkflowCommit = internalMutation({
     draftId: v.id("publishingDrafts"),
     branch: v.string(),
     commitSha: v.string(),
+    workflowBlobSha: v.string(),
     templateKey: workflowTemplateKeyValidator,
     templateVersion: v.number(),
   },
@@ -386,6 +392,7 @@ export const recordWorkflowCommit = internalMutation({
       workflowPullRequestUrl: undefined,
       workflowPullRequestState: undefined,
       workflowCommitSha: args.commitSha,
+      workflowBlobSha: args.workflowBlobSha,
       workflowTemplateVersion: args.templateVersion,
       workflowInstalledAt: Date.now(),
       workflowInstalled: true,
@@ -405,6 +412,7 @@ const workflowRunValidator = v.object({
   commitSha: v.string(),
   tag: v.optional(v.string()),
   createdAt: v.number(),
+  startedAt: v.optional(v.number()),
   completedAt: v.optional(v.number()),
 });
 
@@ -421,7 +429,17 @@ const releaseStateValidator = v.object({
     url: v.string(),
     size: v.number(),
     contentType: v.optional(v.string()),
+    digest: v.optional(v.string()),
   }),
+  // Evidence gathered from GitHub; evaluated by convex/lib/buildProvenance.ts.
+  provenance: v.optional(
+    v.object({
+      releaseAuthor: v.optional(v.string()),
+      assetUploader: v.optional(v.string()),
+      assetCreatedAt: v.optional(v.number()),
+      workflowBlobShaAtCommit: v.optional(v.string()),
+    }),
+  ),
 });
 
 export const recordGitHubState = internalMutation({
@@ -445,8 +463,12 @@ export const recordGitHubState = internalMutation({
     if (draft.status === "inReview") {
       return { verifiedBuild: draft.verifiedBuild, readyToPublish: true };
     }
+    if (await isRejectedSubmission(ctx, draft)) {
+      return { verifiedBuild: false, readyToPublish: false };
+    }
     const preserveReviewStatus =
-      draft.status === "published" && (!args.release || draft.latestReleaseId === args.release.id)
+      (draft.status === "published" || draft.status === "rejected") &&
+      (!args.release || draft.latestReleaseId === args.release.id)
         ? draft.status
         : undefined;
     const repository = await ctx.db.get("repositories", draft.repositoryId);
@@ -455,21 +477,26 @@ export const recordGitHubState = internalMutation({
     const selectedTemplate = draft.workflowTemplateKey
       ? await resolveWorkflowTemplate(ctx, draft.workflowTemplateKey)
       : null;
-    const verifiedBuild = Boolean(
+    const workflowEligible = Boolean(
       repository &&
         !repository.isPrivate &&
         repository.accessStatus === "granted" &&
         selectedTemplate &&
         selectedTemplate.adapterId === draft.adapterId &&
         selectedTemplate.version === draft.workflowTemplateVersion &&
-        args.workflowInstalled &&
-        run &&
-        run.status === "completed" &&
-        run.conclusion === "success" &&
-        run.tag === release?.tag &&
-        run.commitSha === release?.commitSha &&
-        release.asset.size > 0,
+        args.workflowInstalled,
     );
+    const provenance = evaluateBuildProvenance({
+      installedWorkflowBlobSha: draft.workflowBlobSha,
+      run,
+      release,
+    });
+    const verifiedBuild = workflowEligible && provenance.verified;
+    const verificationFailure = verifiedBuild
+      ? undefined
+      : provenance.verified
+        ? "WORKFLOW_NOT_ELIGIBLE"
+        : provenance.reason;
     const readyToPublish = verifiedBuild && draft.moderationReady && Boolean(draft.projectId);
     const now = Date.now();
 
@@ -553,12 +580,13 @@ export const recordGitHubState = internalMutation({
           releaseUrl: release.url,
           commitSha: release.commitSha,
           status:
-            releaseDocument?.status === "published"
-              ? ("published" as const)
+            releaseDocument?.status === "published" || releaseDocument?.status === "rejected"
+              ? releaseDocument.status
               : verifiedBuild
                 ? ("verified" as const)
                 : ("detected" as const),
           verifiedBuild,
+          verificationFailure,
           updatedAt: now,
         };
         if (releaseDocument) {
@@ -582,6 +610,7 @@ export const recordGitHubState = internalMutation({
             downloadUrl: release.asset.url,
             size: release.asset.size,
             contentType: release.asset.contentType,
+            digest: release.asset.digest,
             isPrimary: true,
             status: "accepted" as const,
             updatedAt: now,
@@ -629,6 +658,43 @@ export const recordGitHubState = internalMutation({
     return { verifiedBuild, readyToPublish };
   },
 });
+
+/**
+ * Rejection is final for a project's first submission. Once a project is
+ * published, only the rejected release is blocked and newer releases may be
+ * submitted.
+ */
+async function isRejectedSubmission(ctx: QueryCtx | MutationCtx, draft: Doc<"publishingDrafts">) {
+  if (draft.status !== "rejected") {
+    return false;
+  }
+  const project = draft.projectId ? await ctx.db.get("projects", draft.projectId) : null;
+  return project?.status !== "published";
+}
+
+const REJECTED_SUBMISSION_ERROR = {
+  code: "SUBMISSION_REJECTED",
+  message: "This project was rejected by a moderator and cannot be resubmitted.",
+} as const;
+
+/** Moderators may not approve projects they created or belong to. */
+async function assertNotOwnSubmission(
+  ctx: MutationCtx,
+  draft: Doc<"publishingDrafts">,
+  user: AppUser,
+) {
+  const ownsDraft =
+    draft.createdBy === user._id ||
+    (draft.ownerType === "user"
+      ? draft.ownerId === user._id
+      : Boolean(await getActiveOrganizationMembership(ctx, draft.ownerId, user)));
+  if (ownsDraft) {
+    throw new ConvexError({
+      code: "SELF_REVIEW_FORBIDDEN",
+      message: "You cannot approve your own submission. Ask another moderator to review it.",
+    });
+  }
+}
 
 async function requirePublishableRelease(ctx: MutationCtx, draft: Doc<"publishingDrafts">) {
   const selectedTemplate = draft.workflowTemplateKey
@@ -702,6 +768,7 @@ export const submitForReview = authenticatedMutation({
   args: { draftId: v.id("publishingDrafts") },
   returns: v.id("projects"),
   handler: async (ctx, args) => {
+    await enforceRateLimit(ctx, "publishingSubmit", ctx.user._id);
     const draft = await requireOwnedDraft(ctx, args.draftId, ctx.user);
     if (draft.status === "published") {
       throw new ConvexError({
@@ -714,6 +781,9 @@ export const submitForReview = authenticatedMutation({
         code: "ALREADY_IN_REVIEW",
         message: "This release is already waiting for moderator review.",
       });
+    }
+    if (await isRejectedSubmission(ctx, draft)) {
+      throw new ConvexError(REJECTED_SUBMISSION_ERROR);
     }
     const { project } = await requirePublishableRelease(ctx, draft);
     const now = Date.now();
@@ -804,12 +874,16 @@ export const selectDetectedRelease = authenticatedMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    await enforceRateLimit(ctx, "publishingEdit", ctx.user._id);
     const draft = await requireOwnedDraft(ctx, args.draftId, ctx.user);
     if (draft.status === "inReview") {
       throw new ConvexError({
         code: "PUBLISHING_DRAFT_LOCKED",
         message: "The selected release is locked while it is under review.",
       });
+    }
+    if (await isRejectedSubmission(ctx, draft)) {
+      throw new ConvexError(REJECTED_SUBMISSION_ERROR);
     }
     const release = await ctx.db.get("releases", args.releaseId);
     if (
@@ -899,6 +973,7 @@ export const approveReview = moderatorMutation({
   },
   returns: v.id("projects"),
   handler: async (ctx, args) => {
+    await enforceRateLimit(ctx, "moderationDecision", ctx.user._id);
     const draft = await ctx.db.get("publishingDrafts", args.draftId);
     if (draft?.status !== "inReview") {
       throw new ConvexError({
@@ -906,6 +981,7 @@ export const approveReview = moderatorMutation({
         message: "This publishing draft is not waiting for review.",
       });
     }
+    await assertNotOwnSubmission(ctx, draft, ctx.user);
     const { project, release } = await requirePublishableRelease(ctx, draft);
     const now = Date.now();
     await ctx.db.patch("versions", release.versionId, {
@@ -918,8 +994,20 @@ export const approveReview = moderatorMutation({
       publishedAt: now,
       updatedAt: now,
     });
+    // Approving an older release must not move "latest" backwards.
+    let isNewestRelease = true;
+    if (project.latestVersionId && project.latestVersionId !== release.versionId) {
+      const currentLatest = await ctx.db
+        .query("releases")
+        .withIndex("by_version_id", (query) =>
+          query.eq("versionId", project.latestVersionId as Id<"versions">),
+        )
+        .order("desc")
+        .first();
+      isNewestRelease = !currentLatest || release.createdAt >= currentLatest.createdAt;
+    }
     await ctx.db.patch("projects", project._id, {
-      latestVersionId: release.versionId,
+      ...(isNewestRelease ? { latestVersionId: release.versionId } : {}),
       slug: draft.slug,
       name: draft.name,
       summary: draft.summary,
@@ -967,6 +1055,7 @@ async function recordReviewDecision(
   args: { draftId: Id<"publishingDrafts">; reason: string },
   status: "changesRequested" | "rejected",
 ) {
+  await enforceRateLimit(ctx, "moderationDecision", ctx.user._id);
   const reason = args.reason.trim();
   if (!reason) {
     throw new ConvexError({ code: "REASON_REQUIRED", message: "A review reason is required." });
@@ -994,6 +1083,18 @@ async function recordReviewDecision(
       throw new Error("Project disappeared while recording the review decision.");
     }
     await replaceProjectAggregates(ctx, project, draftProject);
+  }
+  if (status === "rejected" && draft.latestReleaseId !== undefined) {
+    // The rejected release can never be selected or submitted again.
+    const release = await ctx.db
+      .query("releases")
+      .withIndex("by_github_release_id", (query) =>
+        query.eq("githubReleaseId", draft.latestReleaseId as number),
+      )
+      .unique();
+    if (release && release.status !== "published") {
+      await ctx.db.patch("releases", release._id, { status: "rejected", updatedAt: now });
+    }
   }
   await ctx.db.patch("publishingDrafts", draft._id, {
     status,

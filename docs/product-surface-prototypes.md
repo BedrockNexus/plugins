@@ -22,7 +22,6 @@ labeled as prototypes and mutation controls remain disabled.
 | `/dashboard/projects/[draftId]` | 6 and 7 | Project metadata editing and fixed repository context |
 | `/dashboard/projects/[draftId]/workflow` | 6 | Publisher workflow selection, direct installation, and update status |
 | `/dashboard/projects/[draftId]/releases` | 6 and 7 | Detected release selection, verification, and review submission |
-| `/dashboard/analytics` | 8 | Totals, traffic sources, and event boundaries |
 | `/dashboard/organizations` | Live | Membership, roles, organization ownership |
 
 ## Administration surfaces
@@ -31,9 +30,9 @@ labeled as prototypes and mutation controls remain disabled.
 | --- | --- | --- |
 | `/admin/reviews` | 6 and 8 | Exact release, asset, metadata, approval, requested changes, rejection |
 | `/admin/workflows` | 6 and 8 | Add/edit validated workflow templates, versions, and audit history |
-| `/admin/reports` | 8 | Report type, priority, target, assignment, decision |
+| `/admin/reports` | 8 (removed until live) | Report type, priority, target, assignment, decision |
 | `/admin/deliveries` | 4 and 8 | Delivery ID, event, attempt, state, error history |
-| `/admin/history` | 8 | Actor, target, reason, prior state, result, timestamp |
+| `/admin/history` | 8 (removed until live) | Actor, target, reason, prior state, result, timestamp |
 
 ## Prototype rules
 

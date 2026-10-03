@@ -9,6 +9,7 @@ import {
   listOrganizationMemberships,
   requireOrganizationManager,
 } from "../../lib/domainAuthorization";
+import { redactText } from "../../lib/redact";
 import { githubInstallationValidator, repositoryValidator } from "../../schema";
 import { githubInstallationInputValidator, githubRepositoryInputValidator } from "./validators";
 
@@ -424,7 +425,7 @@ export const failInstallIntent = internalMutation({
   handler: async (ctx, args) => {
     await ctx.db.patch("githubInstallIntents", args.intentId, {
       status: "failed",
-      lastError: args.error,
+      lastError: redactText(args.error),
       updatedAt: Date.now(),
     });
     return null;

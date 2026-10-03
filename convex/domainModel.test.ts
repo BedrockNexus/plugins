@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 import aggregate from "@convex-dev/aggregate/test";
+import rateLimiter from "@convex-dev/rate-limiter/test";
 import shardedCounter from "@convex-dev/sharded-counter/test";
 import type { WithoutSystemFields } from "convex/server";
 import { convexTest } from "convex-test";
@@ -22,6 +23,7 @@ type TestClient = ReturnType<typeof convexTest>;
 
 function createTestClient() {
   const t = convexTest(schema, modules);
+  rateLimiter.register(t);
   t.registerComponent("betterAuth", betterAuthSchema, betterAuthModules);
   aggregate.register(t, "projectsBySoftware");
   aggregate.register(t, "projectsByOwner");

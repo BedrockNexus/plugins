@@ -1,10 +1,13 @@
 "use client";
 
 import {
+  Add01Icon,
+  ArrowUpRight01Icon,
   Building03Icon,
   DashboardBrowsingIcon,
   Home01Icon,
   Package01Icon,
+  Search01Icon,
   UserIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -13,7 +16,10 @@ import { usePathname } from "next/navigation";
 
 import { UserButton, type UserButtonLink } from "@/components/auth/user/user-button";
 import { BrandMark } from "@/components/brand-mark";
-import { publicNavigation } from "@/lib/site";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { publicNavigation, siteConfig } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 const mobileNavigation = [
@@ -53,37 +59,93 @@ function isActiveRoute(pathname: string, href: string) {
   return href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function HeaderSearch({ className }: { className?: string }) {
+  return (
+    <search className={className}>
+      <form action="/explore" className="relative">
+        <label className="sr-only" htmlFor="header-search">
+          Search plugins
+        </label>
+        <HugeiconsIcon
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+          icon={Search01Icon}
+        />
+        <Input
+          className="h-10 bg-card pl-9"
+          id="header-search"
+          name="q"
+          placeholder="Search plugins"
+          type="search"
+        />
+      </form>
+    </search>
+  );
+}
+
 export function SiteHeader() {
   const pathname = usePathname();
+  const showSearch = !pathname.startsWith("/explore");
 
   return (
     <>
-      <header className="hidden lg:block">
-        <nav aria-label="Primary navigation" className="container mx-auto px-4 md:px-6">
-          <div className="grid h-20 grid-cols-[1fr_auto_1fr] items-center">
-            <BrandMark />
+      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+        <nav
+          aria-label="Primary navigation"
+          className="container mx-auto flex h-16 items-center gap-6 px-4 md:px-6 lg:h-18"
+        >
+          <BrandMark imageClassName="w-28 lg:w-32" withIcon />
 
-            <div className="flex items-center gap-1">
-              {publicNavigation.map((item) => {
-                const active = isActiveRoute(pathname, item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    aria-current={active ? "page" : undefined}
-                    className={cn(
-                      "flex items-center gap-2 rounded-md px-4 py-2 font-medium text-muted-foreground text-sm transition-[color,background-color,filter] hover:bg-primary hover:text-primary-foreground hover:brightness-95",
-                      active && "bg-primary text-primary-foreground shadow-sm",
-                    )}
-                  >
-                    <HugeiconsIcon icon={item.icon} className="size-4" aria-hidden="true" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
+          <div className="hidden items-center gap-6 lg:flex">
+            {publicNavigation.map((item) => {
+              const active = isActiveRoute(pathname, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "border-transparent border-b-2 py-2 font-display font-semibold text-[15px] text-muted-foreground transition-colors hover:text-foreground",
+                    active && "border-primary text-foreground",
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+            <a
+              className="inline-flex items-center gap-1.5 py-2 font-display font-semibold text-[15px] text-ember-text transition-colors hover:text-foreground"
+              href={siteConfig.hubUrl}
+            >
+              Bedrock Nexus
+              <HugeiconsIcon aria-hidden="true" className="size-3.5" icon={ArrowUpRight01Icon} />
+            </a>
+          </div>
 
-            <div className="flex items-center justify-end">
+          <div className="ml-auto flex items-center gap-2.5">
+            {showSearch ? <HeaderSearch className="hidden w-64 md:block" /> : null}
+            {showSearch ? (
+              <Link
+                aria-label="Search plugins"
+                className={cn(buttonVariants({ size: "icon-lg", variant: "outline" }), "md:hidden")}
+                href="/explore"
+              >
+                <HugeiconsIcon className="size-5" icon={Search01Icon} />
+              </Link>
+            ) : null}
+            <ThemeToggle />
+            <Link
+              aria-label="Publish a plugin"
+              className={cn(
+                buttonVariants({ size: "icon-lg", variant: "brand" }),
+                "hidden lg:inline-flex",
+              )}
+              href="/dashboard/projects/new"
+              title="Publish a plugin"
+            >
+              <HugeiconsIcon aria-hidden="true" icon={Add01Icon} strokeWidth={2.5} />
+            </Link>
+            <div className="hidden lg:block">
               <UserButton links={userButtonLinks} size="icon" />
             </div>
           </div>
@@ -92,7 +154,7 @@ export function SiteHeader() {
 
       <nav
         aria-label="Mobile navigation"
-        className="fixed inset-x-0 bottom-0 z-50 border-t bg-muted/95 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 border-t bg-card/95 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
       >
         <div className="mx-auto flex max-w-md items-stretch">
           {mobileNavigation.map((item) => {
@@ -103,8 +165,8 @@ export function SiteHeader() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-muted-foreground",
-                  active && "bg-background text-foreground shadow-sm",
+                  "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-sm px-1 py-1.5 text-muted-foreground",
+                  active && "bg-primary text-primary-foreground",
                 )}
               >
                 <HugeiconsIcon icon={item.icon} className="size-5" aria-hidden="true" />

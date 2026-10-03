@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { DashboardPageShell } from "@/components/dashboard/dashboard-page-shell";
+import { DeleteProjectZone } from "@/components/publishing/delete-project-zone";
 import {
   ProjectManageNav,
   ProjectMetadataManager,
@@ -27,6 +28,7 @@ export default async function ManageProjectPage({
     >
       <ProjectManageNav draftId={draftId} />
       <ProjectMetadataManager draftId={resolvedDraftId} />
+      <DeleteProjectZone draftId={resolvedDraftId} />
     </DashboardPageShell>
   );
 }

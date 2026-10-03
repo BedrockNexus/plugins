@@ -12,7 +12,7 @@ import {
 export async function GET(request: Request) {
   if (!(await isAuthenticated())) {
     return NextResponse.redirect(
-      new URL("/auth/sign-in?redirectTo=/dashboard/projects/new" as Route, request.url),
+      new URL("/login?redirectTo=/dashboard/projects/new" as Route, request.url),
     );
   }
 

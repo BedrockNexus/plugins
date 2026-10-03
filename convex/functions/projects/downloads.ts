@@ -1,19 +1,10 @@
-import { MINUTE, RateLimiter } from "@convex-dev/rate-limiter";
 import { ConvexError, v } from "convex/values";
 
-import { components, internal } from "../../_generated/api";
+import { internal } from "../../_generated/api";
 import { internalMutation, mutation } from "../../_generated/server";
 import { ownerDownloadCounts, projectDownloadCounts } from "../../lib/downloadCounts";
 import { projectOwnerKey } from "../../lib/projectAggregates";
-
-const downloadRateLimiter = new RateLimiter(components.rateLimiter, {
-  downloads: {
-    kind: "token bucket",
-    rate: 30,
-    period: MINUTE,
-    capacity: 10,
-  },
-});
+import { rateLimiter } from "../../lib/rateLimits";
 
 const notFound = () =>
   new ConvexError({
@@ -180,7 +171,7 @@ export const resolveAndRecord = mutation({
       assetName: asset.name,
     });
 
-    const rateLimit = await downloadRateLimiter.limit(ctx, "downloads", {
+    const rateLimit = await rateLimiter.limit(ctx, "downloads", {
       key: args.anonymousIdHash,
     });
     if (!rateLimit.ok) {

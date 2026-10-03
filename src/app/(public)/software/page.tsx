@@ -25,10 +25,10 @@ export default async function SoftwarePage() {
     >
       <div className="grid gap-5 md:grid-cols-2">
         {software.map((item) => (
-          <Link key={item.slug} href={`/software/${item.slug}`} className="group rounded-xl">
+          <Link key={item.slug} href={`/software/${item.slug}`} className="group rounded-md">
             <Card className="h-full transition-[transform,border-color] group-hover:-translate-y-1 group-hover:border-primary">
               <CardHeader className="grid-cols-[auto_1fr_auto] items-center gap-x-4">
-                <span className="row-span-2 grid size-12 place-items-center rounded-lg bg-primary text-primary-foreground">
+                <span className="extrude row-span-2 grid size-12 place-items-center rounded-sm border-2 border-edge bg-primary text-primary-foreground">
                   <HugeiconsIcon icon={Package01Icon} className="size-5" aria-hidden="true" />
                 </span>
                 <CardTitle className="col-start-2 text-lg">{item.name}</CardTitle>

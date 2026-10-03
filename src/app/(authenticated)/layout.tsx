@@ -7,7 +7,7 @@ import { fetchAuthMutation, isAuthenticated } from "@/lib/auth-server";
 
 export default async function AuthenticatedLayout({ children }: { children: ReactNode }) {
   if (!(await isAuthenticated())) {
-    redirect("/auth/sign-in?redirectTo=/dashboard" as Route);
+    redirect("/login?redirectTo=/dashboard" as Route);
   }
 
   await fetchAuthMutation(api.functions.site.users.syncCurrentUser, {});

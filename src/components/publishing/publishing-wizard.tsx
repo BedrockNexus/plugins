@@ -203,7 +203,7 @@ export function AddProjectFlow() {
     <div className="grid gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
       <Card className="h-fit shadow-none">
         <CardHeader>
-          <span className="mb-3 grid size-11 place-items-center rounded-lg bg-primary text-primary-foreground">
+          <span className="mb-3 grid size-11 place-items-center rounded-md bg-primary text-primary-foreground">
             <HugeiconsIcon className="size-5" icon={RepositoryIcon} />
           </span>
           <CardTitle>Choose a repository</CardTitle>
@@ -304,7 +304,7 @@ export function AddProjectFlow() {
       ) : (
         <Card className="border-dashed shadow-none">
           <CardContent className="flex min-h-72 flex-col items-center justify-center p-8 text-center">
-            <span className="grid size-14 place-items-center rounded-xl border text-muted-foreground">
+            <span className="grid size-14 place-items-center rounded-md border text-muted-foreground">
               <HugeiconsIcon className="size-6" icon={Search01Icon} />
             </span>
             <h2 className="mt-5 font-semibold text-lg">Select and detect a plugin</h2>
@@ -443,7 +443,7 @@ export function ProjectWorkflowManager({ draftId }: { draftId: Id<"publishingDra
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <Card className="shadow-none">
         <CardHeader>
-          <span className="mb-3 grid size-12 place-items-center rounded-lg bg-primary text-primary-foreground">
+          <span className="mb-3 grid size-12 place-items-center rounded-md bg-primary text-primary-foreground">
             <HugeiconsIcon className="size-5" icon={WorkflowSquare01Icon} />
           </span>
           <CardTitle>Managed publishing workflow</CardTitle>
@@ -463,8 +463,8 @@ export function ProjectWorkflowManager({ draftId }: { draftId: Id<"publishingDra
                   <button
                     className={
                       isSelected
-                        ? "rounded-lg border border-primary bg-primary p-4 text-left text-primary-foreground"
-                        : "rounded-lg border p-4 text-left transition-colors hover:bg-muted"
+                        ? "rounded-md border border-primary bg-primary p-4 text-left text-primary-foreground"
+                        : "rounded-md border p-4 text-left transition-colors hover:bg-muted"
                     }
                     disabled={draft.status === "inReview" || busyAction !== null}
                     key={workflow.key}
@@ -497,7 +497,7 @@ export function ProjectWorkflowManager({ draftId }: { draftId: Id<"publishingDra
               </p>
             ) : null}
           </div>
-          <div className="rounded-lg border bg-muted p-4 font-mono text-sm">
+          <div className="rounded-md border bg-muted p-4 font-mono text-sm">
             .github/workflows/bedrocknexus-publish.yml
           </div>
           <div className="flex flex-wrap gap-3">
@@ -643,7 +643,7 @@ export function ProjectReleaseManager({ draftId }: { draftId: Id<"publishingDraf
         </CardHeader>
         <CardContent className="space-y-4">
           {releases.length === 0 ? (
-            <div className="rounded-xl border border-dashed p-8 text-center">
+            <div className="rounded-md border border-dashed p-8 text-center">
               <HugeiconsIcon
                 className="mx-auto size-7 text-muted-foreground"
                 icon={Package01Icon}
@@ -659,14 +659,14 @@ export function ProjectReleaseManager({ draftId }: { draftId: Id<"publishingDraf
               return (
                 <div
                   className={cn(
-                    "flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center",
+                    "flex flex-col gap-4 rounded-md border p-4 sm:flex-row sm:items-center",
                     selected && "border-primary",
                   )}
                   key={release.releaseId}
                 >
                   <span
                     className={cn(
-                      "grid size-10 shrink-0 place-items-center rounded-lg border",
+                      "grid size-10 shrink-0 place-items-center rounded-md border",
                       selected && "bg-primary text-primary-foreground",
                     )}
                   >
@@ -736,7 +736,7 @@ export function ProjectReleaseManager({ draftId }: { draftId: Id<"publishingDraf
               </Badge>
             </div>
             {draft.reviewNotes ? (
-              <div className="rounded-lg border bg-muted p-3 text-sm">
+              <div className="rounded-md border bg-muted p-3 text-sm">
                 <p className="font-medium">Moderator note</p>
                 <p className="mt-1 text-muted-foreground">{draft.reviewNotes}</p>
               </div>

@@ -29,7 +29,7 @@ export function GitHubProfileCard() {
   );
 
   if (auth.isLoading || profile === undefined) {
-    return <Skeleton className="h-80 w-full rounded-xl" />;
+    return <Skeleton className="h-80 w-full rounded-md" />;
   }
 
   const githubUrl = profile.githubUsername
@@ -110,7 +110,7 @@ export function GitHubProfileCard() {
             </div>
           ) : null}
 
-          <p className="rounded-lg border bg-muted p-3 text-muted-foreground text-xs leading-5">
+          <p className="rounded-md border bg-muted p-3 text-muted-foreground text-xs leading-5">
             Profile details are read-only on BedrockNexus and refresh from GitHub when you sign in.
           </p>
         </CardContent>

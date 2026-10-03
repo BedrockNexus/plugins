@@ -54,7 +54,7 @@ function KpiCard({
         </div>
         <span
           className={cn(
-            "grid size-10 shrink-0 place-items-center rounded-lg shadow-xs",
+            "grid size-10 shrink-0 place-items-center rounded-md shadow-xs",
             iconClassName,
           )}
         >
@@ -106,7 +106,6 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-6">
       <Card className="overflow-hidden border-border/60">
         <CardContent className="relative flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 site-grid opacity-50" />
           <div className="relative flex flex-col gap-2">
             <p className="text-muted-foreground text-sm">Welcome back,</p>
             <h1 className="font-bold text-3xl tracking-tight">
@@ -200,7 +199,7 @@ export default async function DashboardPage() {
                   target="_blank"
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground">
                       <HugeiconsIcon className="size-4" icon={RepositoryIcon} />
                     </span>
                     <div className="min-w-0">
@@ -225,11 +224,11 @@ export default async function DashboardPage() {
           <div className="grid gap-1 p-3">
             {quickActions.map((action) => (
               <Link
-                className="group flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-muted"
+                className="group flex items-center gap-3 rounded-md p-3 transition-colors hover:bg-muted"
                 href={action.href as Route}
                 key={action.href}
               >
-                <span className="grid size-9 shrink-0 place-items-center rounded-lg border bg-background text-muted-foreground group-hover:text-foreground">
+                <span className="grid size-9 shrink-0 place-items-center rounded-md border bg-background text-muted-foreground group-hover:text-foreground">
                   <HugeiconsIcon className="size-4" icon={action.icon} />
                 </span>
                 <span className="min-w-0 flex-1">

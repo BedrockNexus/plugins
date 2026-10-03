@@ -19,7 +19,7 @@ export default function PublicError({
   return (
     <main className="mx-auto grid min-h-[65vh] max-w-7xl place-items-center px-4 py-16 text-center sm:px-6 lg:px-8">
       <div>
-        <span className="mx-auto grid size-12 place-items-center rounded-xl bg-destructive/10 text-destructive">
+        <span className="mx-auto grid size-12 place-items-center rounded-md bg-destructive/10 text-destructive">
           <HugeiconsIcon icon={Alert01Icon} className="size-5" aria-hidden="true" />
         </span>
         <h1 className="mt-5 text-2xl font-bold">This page hit an unexpected error</h1>

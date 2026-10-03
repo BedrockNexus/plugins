@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 
+import rateLimiter from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
 
@@ -13,6 +14,7 @@ const betterAuthModules = import.meta.glob("./betterAuth/**/*.ts");
 
 function createTest() {
   const t = convexTest(schema, modules);
+  rateLimiter.register(t);
   t.registerComponent("betterAuth", betterAuthSchema, betterAuthModules);
   return t;
 }

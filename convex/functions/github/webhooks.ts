@@ -4,6 +4,7 @@ import { internal } from "../../_generated/api";
 import type { Doc, Id } from "../../_generated/dataModel";
 import { internalMutation, type MutationCtx } from "../../_generated/server";
 import { moderatorQuery } from "../../lib/authorization";
+import { redactText } from "../../lib/redact";
 import { githubInstallationInputValidator, githubRepositoryInputValidator } from "./validators";
 
 const normalizedWebhookValidator = v.object({
@@ -350,11 +351,11 @@ export const failDelivery = internalMutation({
       args.attemptNumber,
       "failed",
       now,
-      args.error,
+      redactText(args.error),
     );
     await replaceDeliveryState(ctx, args.webhookDeliveryId, {
       status: "failed",
-      lastError: args.error,
+      lastError: redactText(args.error),
       completedAt: now,
     });
     return null;

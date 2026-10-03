@@ -16,3 +16,9 @@ node_modules
 docs
 TODO.md
 TESTING.md
+
+# Agent tooling and local test output
+.agents
+.claude
+playwright-report
+test-results

@@ -7,7 +7,7 @@ import { fetchAuthMutation, fetchAuthQuery, isAuthenticated } from "@/lib/auth-s
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   if (!(await isAuthenticated())) {
-    redirect("/auth/sign-in?redirectTo=/admin" as Route);
+    redirect("/login?redirectTo=/admin" as Route);
   }
 
   await fetchAuthMutation(api.functions.site.users.syncCurrentUser, {});

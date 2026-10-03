@@ -18,6 +18,7 @@ import type * as functions_github_webhookHttp from "../functions/github/webhookH
 import type * as functions_github_webhookPayload from "../functions/github/webhookPayload.js";
 import type * as functions_github_webhookSignature from "../functions/github/webhookSignature.js";
 import type * as functions_github_webhooks from "../functions/github/webhooks.js";
+import type * as functions_projects_deletion from "../functions/projects/deletion.js";
 import type * as functions_projects_downloads from "../functions/projects/downloads.js";
 import type * as functions_projects_projects from "../functions/projects/projects.js";
 import type * as functions_projects_publishing_actions from "../functions/projects/publishing/actions.js";
@@ -30,10 +31,14 @@ import type * as functions_site_organizations from "../functions/site/organizati
 import type * as functions_site_serverSoftware from "../functions/site/serverSoftware.js";
 import type * as functions_site_users from "../functions/site/users.js";
 import type * as http from "../http.js";
+import type * as lib_authProxy from "../lib/authProxy.js";
 import type * as lib_authorization from "../lib/authorization.js";
+import type * as lib_buildProvenance from "../lib/buildProvenance.js";
 import type * as lib_domainAuthorization from "../lib/domainAuthorization.js";
 import type * as lib_downloadCounts from "../lib/downloadCounts.js";
 import type * as lib_projectAggregates from "../lib/projectAggregates.js";
+import type * as lib_rateLimits from "../lib/rateLimits.js";
+import type * as lib_redact from "../lib/redact.js";
 import type * as lib_slugs from "../lib/slugs.js";
 import type * as lib_usernames from "../lib/usernames.js";
 import type * as lib_workflowTemplates from "../lib/workflowTemplates.js";
@@ -56,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   "functions/github/webhookPayload": typeof functions_github_webhookPayload;
   "functions/github/webhookSignature": typeof functions_github_webhookSignature;
   "functions/github/webhooks": typeof functions_github_webhooks;
+  "functions/projects/deletion": typeof functions_projects_deletion;
   "functions/projects/downloads": typeof functions_projects_downloads;
   "functions/projects/projects": typeof functions_projects_projects;
   "functions/projects/publishing/actions": typeof functions_projects_publishing_actions;
@@ -68,10 +74,14 @@ declare const fullApi: ApiFromModules<{
   "functions/site/serverSoftware": typeof functions_site_serverSoftware;
   "functions/site/users": typeof functions_site_users;
   http: typeof http;
+  "lib/authProxy": typeof lib_authProxy;
   "lib/authorization": typeof lib_authorization;
+  "lib/buildProvenance": typeof lib_buildProvenance;
   "lib/domainAuthorization": typeof lib_domainAuthorization;
   "lib/downloadCounts": typeof lib_downloadCounts;
   "lib/projectAggregates": typeof lib_projectAggregates;
+  "lib/rateLimits": typeof lib_rateLimits;
+  "lib/redact": typeof lib_redact;
   "lib/slugs": typeof lib_slugs;
   "lib/usernames": typeof lib_usernames;
   "lib/workflowTemplates": typeof lib_workflowTemplates;

@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 
+import rateLimiter from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -21,6 +22,7 @@ const webhookSecret = "It's a Secret to Everybody";
 function createTest() {
   const t = convexTest(schema, modules);
   t.registerComponent("betterAuth", betterAuthSchema, betterAuthModules);
+  rateLimiter.register(t);
   return t;
 }
 

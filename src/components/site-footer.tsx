@@ -1,103 +1,75 @@
-import { GitBranchIcon, LinkSquare01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import type { Route } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
-import { BrandMark } from "@/components/brand-mark";
 import { publicNavigation, siteConfig } from "@/lib/site";
 
-const platformLinks = [
-  { href: "/dashboard", label: "Developer dashboard", external: false },
-  { href: siteConfig.githubUrl, label: "GitHub repository", external: true },
-  { href: siteConfig.hubUrl, label: "Main BedrockNexus platform", external: true },
-] as const;
+const columns = [
+  {
+    title: "Discover",
+    links: [
+      { href: "/", label: "Home" },
+      ...publicNavigation.map((item) => ({ href: item.href, label: item.label })),
+    ],
+  },
+  {
+    title: "Developers",
+    links: [
+      { href: "/dashboard/projects/new", label: "Publish a plugin" },
+      { href: "/dashboard", label: "Developer dashboard" },
+    ],
+  },
+  {
+    title: "Bedrock Nexus",
+    links: [
+      { href: siteConfig.hubUrl, label: "Servers & projects", external: true },
+      { href: siteConfig.githubUrl, label: "GitHub", external: true },
+    ],
+  },
+];
+
+const linkClass = "text-muted-foreground text-sm transition-colors hover:text-foreground";
 
 export function SiteFooter() {
   return (
-    <footer className="border-t bg-muted">
-      <div className="container mx-auto px-4 py-14 md:px-6">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto]">
-          <div className="flex flex-col gap-5">
-            <BrandMark imageClassName="w-64" />
-            <p className="max-w-xs text-muted-foreground text-sm leading-relaxed">
-              GitHub-powered publishing and discovery for the Minecraft Bedrock server ecosystem.
-            </p>
+    <footer className="border-t bg-surface-sunken">
+      <div aria-hidden="true" className="strata h-3 border-ember border-b-2" />
+      <div className="container mx-auto flex flex-wrap justify-between gap-10 px-4 pt-12 pb-8 md:px-6">
+        <div className="flex max-w-sm flex-1 basis-72 flex-col gap-4">
+          <div className="flex items-center gap-2.5">
+            <Image alt="" className="size-11" height={88} src="/icon.png" unoptimized width={88} />
+            <span className="font-bold font-display text-xl">Bedrock Nexus Plugins</span>
           </div>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            Open-source plugins for Minecraft Bedrock servers, built from public GitHub
+            repositories. An Amblydia project.
+          </p>
+        </div>
 
-          <div className="flex flex-col gap-4">
-            <h2 className="font-semibold text-foreground text-xs uppercase tracking-widest">
-              Explore
-            </h2>
-            <ul className="flex flex-col gap-3">
-              <li>
-                <Link
-                  className="text-muted-foreground text-sm transition-colors hover:text-foreground"
-                  href="/"
-                >
-                  Home
-                </Link>
-              </li>
-              {publicNavigation.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    className="text-muted-foreground text-sm transition-colors hover:text-foreground"
-                    href={link.href}
-                  >
+        <div className="flex flex-wrap gap-14">
+          {columns.map((column) => (
+            <nav aria-label={column.title} className="flex flex-col gap-2.5" key={column.title}>
+              <h2 className="font-bold font-display text-foreground text-xs uppercase tracking-[0.12em]">
+                {column.title}
+              </h2>
+              {column.links.map((link) =>
+                "external" in link && link.external ? (
+                  <a className={linkClass} href={link.href} key={link.href} rel="noopener">
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link className={linkClass} href={link.href as Route} key={link.href}>
                     {link.label}
                   </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <h2 className="font-semibold text-foreground text-xs uppercase tracking-widest">
-              Platform
-            </h2>
-            <ul className="flex flex-col gap-3">
-              {platformLinks.map((link) => (
-                <li key={link.href}>
-                  {link.external ? (
-                    <a
-                      className="inline-flex items-center gap-1.5 text-muted-foreground text-sm transition-colors hover:text-foreground"
-                      href={link.href}
-                    >
-                      {link.label}
-                      {link.href === siteConfig.githubUrl ? (
-                        <HugeiconsIcon
-                          icon={GitBranchIcon}
-                          className="size-3.5"
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <HugeiconsIcon
-                          icon={LinkSquare01Icon}
-                          className="size-3.5"
-                          aria-hidden="true"
-                        />
-                      )}
-                    </a>
-                  ) : (
-                    <Link
-                      className="text-muted-foreground text-sm transition-colors hover:text-foreground"
-                      href={link.href}
-                    >
-                      {link.label}
-                    </Link>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
+                ),
+              )}
+            </nav>
+          ))}
         </div>
-
-        <div className="mt-12 flex flex-col gap-3 border-t pt-8 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-muted-foreground text-xs">
-            © {new Date().getFullYear()} BedrockNexus. All rights reserved.
-          </p>
-          <p className="text-muted-foreground/60 text-xs">
-            Not affiliated with Mojang Studios or Microsoft.
-          </p>
-        </div>
+      </div>
+      <div className="container mx-auto flex flex-col gap-2 border-t px-4 py-6 text-muted-foreground text-xs sm:flex-row sm:justify-between md:px-6">
+        <p>© {new Date().getFullYear()} BedrockNexus. Open source under AGPL-3.0.</p>
+        <p>Not affiliated with Mojang Studios or Microsoft.</p>
       </div>
     </footer>
   );

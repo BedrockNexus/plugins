@@ -6,6 +6,8 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import { type ActionCtx, action, env, internalAction } from "../../_generated/server";
+import { enforceRateLimit } from "../../lib/rateLimits";
+import { safeErrorMessage } from "../../lib/redact";
 import {
   createGitHubApp,
   createUserOctokit,
@@ -293,6 +295,7 @@ export const createInstallUrl = action({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     const tokenIdentifier = requireIdentityTokenIdentifier(identity);
+    await enforceRateLimit(ctx, "githubInstall", tokenIdentifier);
     const config = getConfig();
     const state = randomBytes(32).toString("base64url");
     const expiresAt = Date.now() + 15 * 60 * 1000;
@@ -321,6 +324,7 @@ export const completeInstallation = action({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     const tokenIdentifier = requireIdentityTokenIdentifier(identity);
+    await enforceRateLimit(ctx, "githubInstall", tokenIdentifier);
     const stateHash = sha256(args.state);
     const intent = await ctx.runMutation(
       internal.functions.github.installations.beginInstallIntent,
@@ -359,7 +363,7 @@ export const completeInstallation = action({
     } catch (error) {
       await ctx.runMutation(internal.functions.github.installations.failInstallIntent, {
         intentId: intent.intentId,
-        error: error instanceof Error ? error.message : "The GitHub App installation failed.",
+        error: safeErrorMessage(error, "The GitHub App installation failed."),
       });
       throw error;
     }
@@ -374,6 +378,7 @@ export const refreshInstallation = action({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     const tokenIdentifier = requireIdentityTokenIdentifier(identity);
+    await enforceRateLimit(ctx, "githubRead", tokenIdentifier);
     const access = await ctx.runQuery(
       internal.functions.github.installations.getInstallationAccess,
       {
@@ -447,6 +452,7 @@ export const getRepositorySnapshot = action({
   handler: async (ctx, args): Promise<typeof repositorySnapshotValidator.type> => {
     const identity = await ctx.auth.getUserIdentity();
     const tokenIdentifier = requireIdentityTokenIdentifier(identity);
+    await enforceRateLimit(ctx, "githubRead", tokenIdentifier);
     const access: {
       installationId: number;
       repositoryId: Id<"repositories">;

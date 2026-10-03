@@ -1,15 +1,11 @@
 import { createHash } from "node:crypto";
 import { fetchMutation } from "convex/nextjs";
-
+import { logEvent } from "@/../convex/lib/redact";
+import { getClientAddress } from "@/lib/client-address";
 import { api } from "../../../../../convex/_generated/api";
 
 function hashFingerprint(salt: string, namespace: string, value: string) {
   return createHash("sha256").update(`${salt}\0${namespace}\0${value}`).digest("hex");
-}
-
-function clientAddress(request: Request) {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return forwarded || request.headers.get("x-real-ip")?.trim() || "unknown";
 }
 
 function errorCode(error: unknown) {
@@ -31,7 +27,7 @@ function errorCode(error: unknown) {
 }
 
 function analyticsEvent(args: { projectSlug: string; version: string; counted: boolean }) {
-  console.info("registry_download_redirect", args);
+  logEvent("info", "registry_download_redirect", args);
 }
 
 export async function GET(
@@ -56,11 +52,18 @@ export async function GET(
     version.length < 1 ||
     version.length > 100
   ) {
-    return new Response("Download not found.", { status: 404 });
+    return new Response("Download not found.", {
+      status: 404,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 
   const userAgent = request.headers.get("user-agent") || "unknown";
-  const anonymousIdHash = hashFingerprint(redirectSecret, "address", clientAddress(request));
+  const anonymousIdHash = hashFingerprint(
+    redirectSecret,
+    "address",
+    getClientAddress(request.headers),
+  );
   const userAgentHash = hashFingerprint(redirectSecret, "user-agent", userAgent);
 
   try {
@@ -94,7 +97,7 @@ export async function GET(
         headers: { "Cache-Control": "no-store" },
       });
     }
-    console.error("registry_download_redirect_failed", { projectSlug, version });
+    logEvent("error", "registry_download_redirect_failed", { projectSlug, version, error });
     return new Response("Download service is temporarily unavailable.", {
       status: 503,
       headers: { "Cache-Control": "no-store" },

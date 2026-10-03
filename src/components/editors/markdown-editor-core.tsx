@@ -58,7 +58,7 @@ export function MarkdownEditorCore({
   return (
     <fieldset
       aria-labelledby={labelledBy}
-      className={cn("overflow-hidden rounded-lg border bg-background", className)}
+      className={cn("overflow-hidden rounded-md border bg-background", className)}
       disabled={disabled}
     >
       <MDXEditor
